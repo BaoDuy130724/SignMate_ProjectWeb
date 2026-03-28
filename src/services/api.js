@@ -1,5 +1,5 @@
 // API Client - Connects React Frontend to .NET Backend
-// All requests go through Vite proxy: /api → http://localhost:5184/api
+// All requests go through Vite proxy: /api → http://signmate.runasp.net/api
 
 export const API_BASE = '/api';
 
