@@ -1,7 +1,7 @@
 // API Client - Connects React Frontend to .NET Backend
 // All requests go through Vite proxy: /api → http://signmate.runasp.net/api
 
-export const API_BASE = '/api';
+export const API_BASE = 'http://signmate.runasp.net/api';
 
 // Helper: get JWT token from localStorage
 const getToken = () => localStorage.getItem('accessToken');
