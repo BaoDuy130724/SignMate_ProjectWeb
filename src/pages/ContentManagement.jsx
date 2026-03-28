@@ -16,7 +16,7 @@ const ContentManagement = () => {
   const [editLesson, setEditLesson] = useState(null);
   const [targetCourseId, setTargetCourseId] = useState(null);
 
-  const [courseForm, setCourseForm] = useState({ title: '', description: '', level: 'Beginner', thumbnailUrl: '' });
+  const [courseForm, setCourseForm] = useState({ title: '', description: '', level: 'Beginner', thumbnailUrl: '', isPublished: false });
   const [lessonForm, setLessonForm] = useState({ title: '', description: '', videoUrl: '', durationSeconds: 0, orderIndex: 0 });
 
   const fetchCourses = async () => {
@@ -113,7 +113,7 @@ const ContentManagement = () => {
         </div>
         <button className="btn btn-primary" onClick={() => {
           setEditCourse(null);
-          setCourseForm({ title: '', description: '', level: 'Beginner', thumbnailUrl: '' });
+          setCourseForm({ title: '', description: '', level: 'Beginner', thumbnailUrl: '', isPublished: false });
           setShowCourseModal(true);
         }}>
           <Plus size={18} /> Tạo Khóa học mới
@@ -163,7 +163,7 @@ const ContentManagement = () => {
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                       <button className="btn btn-white btn-sm" onClick={() => {
                         setEditCourse(course);
-                        setCourseForm({ title: course.title, description: course.description, level: course.level, thumbnailUrl: course.thumbnailUrl });
+                        setCourseForm({ title: course.title, description: course.description, level: course.level, thumbnailUrl: course.thumbnailUrl, isPublished: course.isPublished });
                         setShowCourseModal(true);
                       }}><Edit2 size={14} /></button>
                       <button className="btn btn-white btn-sm" onClick={() => {
@@ -248,6 +248,16 @@ const ContentManagement = () => {
                 <div className="form-group">
                   <label className="form-label">URL Ảnh nền</label>
                   <input type="text" className="form-input" value={courseForm.thumbnailUrl} onChange={e => setCourseForm({...courseForm, thumbnailUrl: e.target.value})} />
+                </div>
+                <div className="form-group" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="isPublished"
+                    checked={courseForm.isPublished} 
+                    onChange={e => setCourseForm({...courseForm, isPublished: e.target.checked})} 
+                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="isPublished" style={{ fontWeight: 700, cursor: 'pointer', color: 'var(--primary)' }}>Công khai Khóa học này (Public)</label>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>

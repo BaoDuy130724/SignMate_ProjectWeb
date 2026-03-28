@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { LogIn, AlertCircle, ArrowLeft } from 'lucide-react';
 import { authApi } from '../services/api';
 
 const LoginPage = ({ setRole }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,11 +26,23 @@ const LoginPage = ({ setRole }) => {
       setRole(role);
       
       localStorage.setItem('userRole', role);
+      if (user.fullName) {
+        localStorage.setItem('fullName', user.fullName);
+      }
       if (user.centerId) {
         localStorage.setItem('centerId', user.centerId);
       }
 
-      // Redirect based on role
+      // 1. Check if we have a 'from' location to redirect back to
+      const from = location.state?.from || '';
+      
+      // 2. If we came from pricing, go back there
+      if (from === '/pricing') {
+        navigate('/pricing');
+        return;
+      }
+
+      // 3. Otherwise, default role-based redirect
       if (role === 'SuperAdmin') navigate('/admin');
       else if (role === 'CenterAdmin') navigate('/center');
       else if (role === 'Teacher') navigate('/teacher');
@@ -100,6 +113,13 @@ const LoginPage = ({ setRole }) => {
             <LogIn size={18} /> {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
+
+        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px', color: 'var(--gray-400)' }}>
+          Chưa có tài khoản?{' '}
+          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
+            Đăng ký ngay
+          </Link>
+        </div>
       </div>
     </div>
   );

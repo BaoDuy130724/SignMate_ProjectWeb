@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Building2, CreditCard, BookOpen, BarChart3, LogOut,
   GraduationCap, UserPlus, ClipboardList,
-  Eye, FileText, Settings
+  Eye, FileText, Settings, Map, Layers, Smartphone, TrendingUp
 } from 'lucide-react';
 
 const Sidebar = ({ role }) => {
@@ -29,9 +29,10 @@ const Sidebar = ({ role }) => {
               ]
             },
             {
-              label: 'Phân tích',
+              label: 'Phân tích & Tài chính',
               links: [
                 { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
+                { to: '/admin/revenue', icon: <CreditCard size={20} />, label: 'Doanh thu' },
               ]
             },
           ]
@@ -81,9 +82,23 @@ const Sidebar = ({ role }) => {
           title: 'LEARNER PORTAL',
           sections: [
             {
+              label: 'Tổng quan',
+              links: [
+                { to: '/student', icon: <Map size={20} />, label: 'Lộ trình học tập', end: true },
+              ]
+            },
+            {
+              label: 'Học tập',
+              links: [
+                { to: '/student/assignments', icon: <Layers size={20} />, label: 'Bài tập từ GV' },
+                { to: '/student/progress', icon: <TrendingUp size={20} />, label: 'Kết quả luyện tập' },
+              ]
+            },
+            {
               label: 'Hệ thống',
               links: [
-                { to: '/student', icon: <LayoutDashboard size={20} />, label: 'Tải ứng dụng', end: true },
+                { to: '/student/mobile', icon: <Smartphone size={20} />, label: 'Tải ứng dụng' },
+                { to: '/pricing', icon: <CreditCard size={20} />, label: 'Nâng cấp Gói' },
               ]
             },
           ]

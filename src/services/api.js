@@ -1,7 +1,7 @@
 // API Client - Connects React Frontend to .NET Backend
 // All requests go through Vite proxy: /api → http://localhost:5184/api
 
-const API_BASE = '/api';
+export const API_BASE = '/api';
 
 // Helper: get JWT token from localStorage
 const getToken = () => localStorage.getItem('accessToken');
@@ -58,6 +58,13 @@ export const authApi = {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify({ email, password }),
+    }).then(handleResponse),
+
+  sendRegisterOtp: (email) =>
+    fetch(`${API_BASE}/auth/send-register-otp`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ email }),
     }).then(handleResponse),
 
   register: (data) =>
@@ -187,11 +194,11 @@ export const subscriptionApi = {
   getMyPlan: () =>
     fetch(`${API_BASE}/subscription/me`, { headers: headers() }).then(handleResponse),
 
-  upgrade: (planId) =>
+  upgrade: (planId, returnUrl) =>
     fetch(`${API_BASE}/subscription/subscribe`, {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ planId }),
+      body: JSON.stringify({ planId, returnUrl }),
     }).then(handleResponse),
 
   getAll: () =>
