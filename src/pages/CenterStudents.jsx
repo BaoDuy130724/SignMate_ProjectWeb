@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, X, Loader2, CheckCircle2, Search, Edit, Trash2, Mail, ExternalLink, Activity, Target } from 'lucide-react';
+import { Users, UserPlus, X, Loader2, CheckCircle2, Search, Edit, Trash2, Mail, Activity } from 'lucide-react';
 import { centersApi } from '../services/api';
 
 const CenterStudents = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [showStudentForm, setShowStudentForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newStudent, setNewStudent] = useState({ fullName: '', email: '', password: '' });
@@ -26,7 +25,7 @@ const CenterStudents = () => {
       const data = await centersApi.getStudents(centerId);
       setStudents(data || []);
     } catch (err) {
-      setError(err.message);
+      showToast(err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -68,7 +67,7 @@ const CenterStudents = () => {
   };
 
   const handleDeleteStudent = async (studentId, fullName) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa học viên ${fullName} khỏi hệ thống không?`)) return;
+    if (!globalThis.confirm(`Bạn có chắc chắn muốn xóa học viên ${fullName} khỏi hệ thống không?`)) return;
     try {
       await centersApi.deleteMember(centerId, studentId);
       showToast('Đã xóa học viên thành công! 🗑️');
@@ -126,8 +125,8 @@ const CenterStudents = () => {
             <Activity size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '13px', color: '#0ea5e9', fontWeight: 700 }}>ĐANG HOẠT ĐỘNG</div>
-            <div style={{ fontSize: '24px', fontWeight: 800 }}>{Math.floor(students.length * 0.8)} <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--gray-400)' }}>online 24h</span></div>
+            <div style={{ fontSize: '13px', color: '#0ea5e9', fontWeight: 700 }}>ĐÃ ĐĂNG KÝ</div>
+            <div style={{ fontSize: '24px', fontWeight: 800 }}>{students.length} <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--gray-400)' }}>tài khoản</span></div>
           </div>
         </div>
       </div>
@@ -137,18 +136,18 @@ const CenterStudents = () => {
           <h3 style={{ marginBottom: '20px' }}>Cấp tài khoản học viên mới</h3>
           <form onSubmit={handleCreateStudent} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
             <div className="form-group">
-              <label className="form-label">Họ và tên</label>
-              <input type="text" className="form-input" placeholder="VD: Nguyễn Văn A" required
+              <label htmlFor="ns-name" className="form-label">Họ và tên</label>
+              <input id="ns-name" type="text" className="form-input" placeholder="VD: Nguyễn Văn A" required
                 value={newStudent.fullName} onChange={e => setNewStudent({...newStudent, fullName: e.target.value})} />
             </div>
             <div className="form-group">
-              <label className="form-label">Email đăng nhập</label>
-              <input type="email" className="form-input" placeholder="student@example.com" required
+              <label htmlFor="ns-email" className="form-label">Email đăng nhập</label>
+              <input id="ns-email" type="email" className="form-input" placeholder="student@example.com" required
                 value={newStudent.email} onChange={e => setNewStudent({...newStudent, email: e.target.value})} />
             </div>
             <div className="form-group">
-              <label className="form-label">Mật khẩu ban đầu</label>
-              <input type="password" minLength={6} className="form-input" placeholder="Mật khẩu" required
+              <label htmlFor="ns-pw" className="form-label">Mật khẩu ban đầu</label>
+              <input id="ns-pw" type="password" minLength={6} className="form-input" placeholder="Mật khẩu" required
                 value={newStudent.password} onChange={e => setNewStudent({...newStudent, password: e.target.value})} />
             </div>
             <div style={{ gridColumn: 'span 3', display: 'flex', gap: '12px', marginTop: '10px' }}>
@@ -244,13 +243,13 @@ const CenterStudents = () => {
             </div>
             <form onSubmit={handleUpdateStudent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="form-group">
-                <label className="form-label">Họ và tên</label>
-                <input type="text" className="form-input" required
+                <label htmlFor="es-name" className="form-label">Họ và tên</label>
+                <input id="es-name" type="text" className="form-input" required
                   value={editingStudent.fullName} onChange={e => setEditingStudent({...editingStudent, fullName: e.target.value})} />
               </div>
               <div className="form-group">
-                <label className="form-label">Email đăng nhập</label>
-                <input type="email" className="form-input" disabled value={editingStudent.email} style={{ background: 'var(--gray-50)', color: 'var(--gray-400)' }} />
+                <label htmlFor="es-email" className="form-label">Email đăng nhập</label>
+                <input id="es-email" type="email" className="form-input" disabled value={editingStudent.email} style={{ background: 'var(--gray-50)', color: 'var(--gray-400)' }} />
               </div>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
                 <button type="button" className="btn btn-white" onClick={() => setEditingStudent(null)}>Hủy</button>

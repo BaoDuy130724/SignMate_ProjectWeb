@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Users, Target, BookOpen, FileText, Download, Loader2, MessageSquare, Plus, Trash2, Edit, X, CheckCircle2, AlertCircle } from 'lucide-react';
-import { classesApi, progressApi, teacherApi } from '../services/api';
+import { progressApi, teacherApi } from '../services/api';
 
 const TeacherDashboard = () => {
   const [classes, setClasses] = useState([]);
@@ -27,11 +27,8 @@ const TeacherDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const centerId = localStorage.getItem('centerId');
-        if (!centerId) throw new Error('Không tìm thấy thông tin trung tâm. Vui lòng đăng nhập lại.');
-        
-        const classesData = await classesApi.getAll(centerId);
-        setClasses(classesData);
+        const classesData = await teacherApi.getClasses();
+        setClasses(classesData || []);
         
         if (classesData.length > 0) {
           const firstClass = classesData[0];
