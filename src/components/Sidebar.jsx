@@ -3,8 +3,10 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, Building2, CreditCard, BookOpen, BarChart3, LogOut,
   GraduationCap, UserPlus, ClipboardList,
-  Eye, FileText, Settings, Map, Layers, Smartphone, TrendingUp
+  Eye, FileText, Settings, Map, Layers, Smartphone, TrendingUp, Bell
 } from 'lucide-react';
+
+const notificationsLink = { to: '/notifications', icon: <Bell size={20} />, label: 'Thông báo' };
 
 const Sidebar = ({ role }) => {
   const getConfig = () => {
@@ -17,6 +19,7 @@ const Sidebar = ({ role }) => {
               label: 'Tổng quan',
               links: [
                 { to: '/admin', icon: <LayoutDashboard size={20} />, label: 'Dashboard', end: true },
+                notificationsLink,
               ]
             },
             {
@@ -45,6 +48,7 @@ const Sidebar = ({ role }) => {
               label: 'Tổng quan',
               links: [
                 { to: '/center', icon: <LayoutDashboard size={20} />, label: 'Dashboard', end: true },
+                notificationsLink,
               ]
             },
             {
@@ -65,6 +69,7 @@ const Sidebar = ({ role }) => {
               label: 'Tổng quan',
               links: [
                 { to: '/teacher', icon: <Eye size={20} />, label: 'Lớp của tôi', end: true },
+                notificationsLink,
               ]
             },
             {
@@ -85,6 +90,7 @@ const Sidebar = ({ role }) => {
               label: 'Tổng quan',
               links: [
                 { to: '/student', icon: <Map size={20} />, label: 'Lộ trình học tập', end: true },
+                notificationsLink,
               ]
             },
             {

@@ -63,9 +63,9 @@ const B2BManagement = () => {
     }
   };
 
-  const filteredCenters = centers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCenters = centers.filter(c =>
+    (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.contactPerson || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading && centers.length === 0) {

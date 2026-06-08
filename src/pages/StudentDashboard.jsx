@@ -4,7 +4,7 @@ import {
   Map, Calendar, ArrowRight, Zap, CheckCircle2, Loader2, 
   TrendingUp, Award, PlayCircle, Star, QrCode, Crown, Sparkles
 } from 'lucide-react';
-import { dashboardApi, subscriptionApi } from '../services/api';
+import { dashboardApi, subscriptionApi, authApi } from '../services/api';
 
 const StudentDashboard = () => {
   const [stats, setStats] = useState({
@@ -14,6 +14,7 @@ const StudentDashboard = () => {
     lessonsCompleted: 0,
     totalLessons: 0,
     points: 0,
+    level: 1,
     recentSessions: [],
     deadlines: []
   });
@@ -23,17 +24,22 @@ const StudentDashboard = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await dashboardApi.getOverview();
-      if (data) {
+      const [overviewData, userData] = await Promise.all([
+        dashboardApi.getOverview().catch(() => null),
+        authApi.me().catch(() => null)
+      ]);
+
+      if (overviewData || userData) {
         setStats(prev => ({
-          streak: data.streak || data.currentStreak || 0,
-          accuracy: data.accuracy || data.averageAccuracy || 0,
-          lessonsCompleted: data.lessonsCompleted || 0,
-          totalLessons: data.totalLessons || 0,
-          points: data.points || 0,
-          recentSessions: data.recentSessions || [],
-          deadlines: data.deadlines || data.assignments || [],
-          fullName: data.fullName || prev.fullName
+          streak: userData ? userData.streak : (overviewData?.streak || overviewData?.currentStreak || 0),
+          accuracy: userData ? userData.practiceAccuracy : (overviewData?.accuracy || overviewData?.averageAccuracy || 0),
+          lessonsCompleted: userData ? userData.lessonsCompleted : (overviewData?.lessonsCompleted || 0),
+          totalLessons: overviewData?.totalLessons || 10,
+          points: userData ? userData.totalXp : (overviewData?.points || 0),
+          level: userData ? userData.level : 1,
+          recentSessions: overviewData?.recentSessions || [],
+          deadlines: overviewData?.deadlines || overviewData?.assignments || [],
+          fullName: userData?.fullName || prev.fullName
         }));
       }
 
@@ -195,7 +201,7 @@ const StudentDashboard = () => {
             </div>
             <div>
                <div style={{ fontSize: '14px', fontWeight: 700, opacity: 0.8 }}>LEVEL</div>
-               <div style={{ fontSize: '28px', fontWeight: 900 }}>Bạc III</div>
+               <div style={{ fontSize: '28px', fontWeight: 900 }}>Cấp độ {stats?.level || 1}</div>
             </div>
          </div>
       </div>

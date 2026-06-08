@@ -151,9 +151,9 @@ const RevenueManagement = () => {
                 <td style={{ fontWeight: 600 }}>{t.planName}</td>
                 <td style={{ fontWeight: 900 }}>{(t.priceVnd || 0).toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--gray-300)' }}>đ</span></td>
                 <td>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: t.status === 'Pending' ? 'var(--yellow)' : 'var(--green)', fontWeight: 700, fontSize: '13px' }}>
-                    {t.status === 'Pending' ? <Clock size={14} /> : <CheckCircle2 size={14} />}
-                    {t.status === 'Success' ? 'Thành công' : 'Chờ xử lý'}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: t.isActive ? 'var(--green)' : 'var(--red)', fontWeight: 700, fontSize: '13px' }}>
+                    {t.isActive ? <CheckCircle2 size={14} /> : <Clock size={14} />}
+                    {t.isActive ? 'Hoạt động' : 'Hết hạn'}
                   </span>
                 </td>
                 <td style={{ textAlign: 'right', paddingRight: '24px' }}><button className="btn btn-white btn-sm"><FileText size={14} /></button></td>

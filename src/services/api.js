@@ -1,12 +1,18 @@
 // API Client - Connects React Frontend to .NET Backend
-// All requests go through Vite proxy: /api → http://signmate.runasp.net/api
+// All requests go through Vite proxy: /api → http://localhost:5184/api
+//
+// FULL COVERAGE: every endpoint exposed by SignMate.API controllers is wrapped below.
+// Naming mirrors the controllers (auth, users, admin, analytics, dashboard, centers,
+// classes, courses, lessons, enrollments, games, practice, progress, tracking,
+// notifications, onboarding, subscription, teacher, vocabulary, b2b contact, seed).
 
 export const API_BASE = '/api';
 
 // Helper: get JWT token from localStorage
 const getToken = () => localStorage.getItem('accessToken');
 
-// Helper: build headers
+// Helper: build headers. Pass isJson=false for multipart/form-data uploads
+// (the browser must set the Content-Type + boundary itself).
 const headers = (isJson = true) => {
   const h = {};
   if (isJson) h['Content-Type'] = 'application/json';
@@ -25,300 +31,438 @@ const handleResponse = async (res) => {
       localStorage.removeItem('userRole');
       window.location.href = '/login';
     }
-    // Try to parse error message from response body
+
+    let errMsg = 'Sai email hoặc mật khẩu.';
     try {
-      const body = await res.json();
-      throw new Error(body.message || 'Unauthorized');
+      const text = await res.text();
+      if (text) {
+        const body = JSON.parse(text);
+        if (body && body.message) {
+          errMsg = body.message;
+        }
+      }
     } catch (e) {
-      if (e.message && e.message !== 'Unauthorized') throw e;
-      throw new Error('Sai email hoặc mật khẩu.');
+      // Ignore JSON parse or text read error, use fallback message
     }
+    throw new Error(errMsg);
   }
+
   if (!res.ok) {
-    const resClone = res.clone();
+    let errMsg = `HTTP ${res.status}`;
     try {
-      const body = await res.json();
-      throw new Error(body.message || `HTTP ${res.status}`);
+      const text = await res.text();
+      if (text) {
+        if (text.startsWith('{')) {
+          const body = JSON.parse(text);
+          if (body) {
+            if (body.message) {
+              errMsg = body.message;
+            } else if (body.errors && Array.isArray(body.errors)) {
+              errMsg = body.errors.join(', ');
+            }
+          }
+        } else if (!text.startsWith('<')) {
+          errMsg = text;
+        }
+      }
     } catch (e) {
-      if (e.message && !e.message.startsWith('Unexpected')) throw e;
-      const text = await resClone.text();
-      throw new Error(text || `HTTP ${res.status}`);
+      // Ignore parse/read error, use fallback HTTP status
+    }
+    throw new Error(errMsg);
+  }
+
+  const text = await res.text();
+  if (!text) return null;
+
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch (e) {
+    return text; // Fallback to raw text if not JSON
+  }
+
+  // Unpack ApiResponse<T> envelope if present
+  if (body && typeof body === 'object' && 'success' in body) {
+    if (body.success) {
+      return 'data' in body ? body.data : body;
+    } else {
+      throw new Error(body.message || 'Yêu cầu không thành công.');
     }
   }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
+
+  return body;
 };
 
+// Small helpers to cut boilerplate
+const get = (path) =>
+  fetch(`${API_BASE}${path}`, { headers: headers() }).then(handleResponse);
+
+const post = (path, data) =>
+  fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: headers(),
+    body: data === undefined ? undefined : JSON.stringify(data),
+  }).then(handleResponse);
+
+const put = (path, data) =>
+  fetch(`${API_BASE}${path}`, {
+    method: 'PUT',
+    headers: headers(),
+    body: data === undefined ? undefined : JSON.stringify(data),
+  }).then(handleResponse);
+
+const del = (path) =>
+  fetch(`${API_BASE}${path}`, {
+    method: 'DELETE',
+    headers: headers(),
+  }).then(handleResponse);
+
+// multipart/form-data upload (file + extra fields), no JSON Content-Type header
+const upload = (path, formData) =>
+  fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: headers(false),
+    body: formData,
+  }).then(handleResponse);
+
 // ============================
-// AUTH
+// AUTH  (api/auth)
 // ============================
 export const authApi = {
-  login: (email, password) =>
-    fetch(`${API_BASE}/auth/login`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify({ email, password }),
-    }).then(handleResponse),
+  login: (email, password) => post('/auth/login', { email, password }),
 
-  sendRegisterOtp: (email) =>
-    fetch(`${API_BASE}/auth/send-register-otp`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify({ email }),
-    }).then(handleResponse),
+  sendRegisterOtp: (email) => post('/auth/send-register-otp', { email }),
 
-  register: (data) =>
-    fetch(`${API_BASE}/auth/register`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  register: (data) => post('/auth/register', data),
 
-  me: () =>
-    fetch(`${API_BASE}/users/me`, { headers: headers() }).then(handleResponse),
+  // body: { refreshToken }
+  refresh: (refreshToken) => post('/auth/refresh', { refreshToken }),
+
+  logout: (refreshToken) => post('/auth/logout', { refreshToken }),
+
+  // body: { email }
+  forgotPassword: (data) => post('/auth/forgot-password', data),
+
+  // body: { email, otp, newPassword } (see ResetPasswordRequest)
+  resetPassword: (data) => post('/auth/reset-password', data),
+
+  // body: { currentPassword, newPassword } (see ChangePasswordRequest)
+  changePassword: (data) => post('/auth/change-password', data),
+
+  me: () => get('/users/me'),
 };
 
 // ============================
-// USERS (Super Admin)
+// USERS  (api/users)  — SuperAdmin for list/CRUD, self for /me
 // ============================
 export const usersApi = {
-  getAll: (role) => {
-    const url = role ? `${API_BASE}/users?role=${role}` : `${API_BASE}/users`;
-    return fetch(url, { headers: headers() }).then(handleResponse);
-  },
+  getAll: (role) => get(role ? `/users?role=${encodeURIComponent(role)}` : '/users'),
 
-  getById: (id) =>
-    fetch(`${API_BASE}/users/${id}`, { headers: headers() }).then(handleResponse),
+  getById: (id) => get(`/users/${id}`),
 
-  update: (id, data) =>
-    fetch(`${API_BASE}/users/${id}`, {
-      method: 'PUT',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  create: (data) => post('/users', data),
 
-  delete: (id) =>
-    fetch(`${API_BASE}/users/${id}`, {
-      method: 'DELETE',
-      headers: headers(),
-    }).then(handleResponse),
+  update: (id, data) => put(`/users/${id}`, data),
+
+  delete: (id) => del(`/users/${id}`),
+
+  getMe: () => get('/users/me'),
+
+  updateMe: (data) => put('/users/me', data),
+
+  getMyStreak: () => get('/users/me/streak'),
+
+  getMyAchievements: () => get('/users/me/achievements'),
 };
 
 // ============================
-// DASHBOARD
+// ADMIN  (api/admin)  — SuperAdmin
+// ============================
+export const adminApi = {
+  getDashboard: () => get('/admin/dashboard'),
+};
+
+// ============================
+// GLOBAL ANALYTICS  (api/analytics)  — SuperAdmin
+// ============================
+export const analyticsApi = {
+  getGlobal: () => get('/analytics'),
+};
+
+// ============================
+// DASHBOARD  (api/dashboard)
 // ============================
 export const dashboardApi = {
-  getOverview: () =>
-    fetch(`${API_BASE}/dashboard`, { headers: headers() }).then(handleResponse),
-  getProgressStats: () =>
-    fetch(`${API_BASE}/dashboard/progress`, { headers: headers() }).then(handleResponse),
+  getOverview: () => get('/dashboard'),
+  getProgressStats: () => get('/dashboard/progress'),
 };
 
 // ============================
-// B2B CENTERS
+// B2B CENTERS  (api/centers)
 // ============================
 export const centersApi = {
-  getAll: () =>
-    fetch(`${API_BASE}/centers`, { headers: headers() }).then(handleResponse),
+  getAll: () => get('/centers'),
 
-  getDashboard: (id) =>
-    fetch(`${API_BASE}/centers/${id}/dashboard`, { headers: headers() }).then(handleResponse),
+  create: (data) => post('/centers', data),
 
-  getTeachers: (id) =>
-    fetch(`${API_BASE}/centers/${id}/teachers`, { headers: headers() }).then(handleResponse),
+  update: (id, data) => put(`/centers/${id}`, data),
 
-  create: (data) =>
-    fetch(`${API_BASE}/centers`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  delete: (id) => del(`/centers/${id}`),
 
-  createAdmin: (centerId, data) =>
-    fetch(`${API_BASE}/centers/${centerId}/admin`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  getDashboard: (id) => get(`/centers/${id}/dashboard`),
 
-  createTeacher: (centerId, data) =>
-    fetch(`${API_BASE}/centers/${centerId}/teachers`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  createAdmin: (centerId, data) => post(`/centers/${centerId}/admin`, data),
 
-  getStudents: (centerId) =>
-    fetch(`${API_BASE}/centers/${centerId}/students`, { headers: headers() }).then(handleResponse),
+  getMember: (centerId, userId) => get(`/centers/${centerId}/members/${userId}`),
 
-  createStudent: (centerId, data) =>
-    fetch(`${API_BASE}/centers/${centerId}/students`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  updateMember: (centerId, userId, data) =>
+    put(`/centers/${centerId}/members/${userId}`, data),
+
+  deleteMember: (centerId, userId) =>
+    del(`/centers/${centerId}/members/${userId}`),
+
+  getTeachers: (id) => get(`/centers/${id}/teachers`),
+
+  createTeacher: (centerId, data) => post(`/centers/${centerId}/teachers`, data),
+
+  getStudents: (centerId) => get(`/centers/${centerId}/students`),
+
+  createStudent: (centerId, data) => post(`/centers/${centerId}/students`, data),
 };
 
 // ============================
-// CLASSES
+// CLASSES  (api/centers/{centerId}/classes)
 // ============================
 export const classesApi = {
-  getAll: (centerId) =>
-    fetch(`${API_BASE}/centers/${centerId}/classes`, { headers: headers() }).then(handleResponse),
+  getAll: (centerId) => get(`/centers/${centerId}/classes`),
 
-  create: (centerId, data) =>
-    fetch(`${API_BASE}/centers/${centerId}/classes`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  getById: (centerId, classId) =>
+    get(`/centers/${centerId}/classes/${classId}`),
 
-  addStudents: (centerId, classId, studentIds) =>
-    fetch(`${API_BASE}/centers/${centerId}/classes/${classId}/students`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify({ studentIds }),
-    }).then(handleResponse),
+  create: (centerId, data) => post(`/centers/${centerId}/classes`, data),
+
+  update: (centerId, classId, data) =>
+    put(`/centers/${centerId}/classes/${classId}`, data),
+
+  delete: (centerId, classId) =>
+    del(`/centers/${centerId}/classes/${classId}`),
 
   getStudents: (centerId, classId) =>
-    fetch(`${API_BASE}/centers/${centerId}/classes/${classId}/students`, { headers: headers() }).then(handleResponse),
-};
+    get(`/centers/${centerId}/classes/${classId}/students`),
 
-// ============================
-// SUBSCRIPTIONS
-// ============================
-export const subscriptionApi = {
-  getPlans: () =>
-    fetch(`${API_BASE}/plans`, { headers: headers() }).then(handleResponse),
+  addStudents: (centerId, classId, studentIds) =>
+    post(`/centers/${centerId}/classes/${classId}/students`, { studentIds }),
 
-  getMyPlan: () =>
-    fetch(`${API_BASE}/subscription/me`, { headers: headers() }).then(handleResponse),
+  removeStudent: (centerId, classId, studentId) =>
+    del(`/centers/${centerId}/classes/${classId}/students/${studentId}`),
 
-  upgrade: (planId, returnUrl) =>
-    fetch(`${API_BASE}/subscription/subscribe`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify({ planId, returnUrl }),
-    }).then(handleResponse),
-
-  getAll: () =>
-    fetch(`${API_BASE}/subscription/all`, { headers: headers() }).then(handleResponse),
-};
-
-// ============================
-// PROGRESS (Teacher)
-// ============================
-export const progressApi = {
-  getClassProgress: (classId) =>
-    fetch(`${API_BASE}/tracking/classes/${classId}/students`, { headers: headers() }).then(handleResponse),
-
-  getCenterReports: (centerId) =>
-    fetch(`${API_BASE}/tracking/centers/${centerId}/reports`, { headers: headers() }).then(handleResponse),
-};
-
-// ============================
-// TEACHER
-// ============================
-export const teacherApi = {
+  // Assign a lesson to a class. body: { lessonId }
   assignLesson: (centerId, classId, lessonId) =>
-    fetch(`${API_BASE}/centers/${centerId}/classes/${classId}/lessons`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify({ lessonId }),
-    }).then(handleResponse),
-
-  addComment: (data) =>
-    fetch(`${API_BASE}/teacher/comments`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+    post(`/centers/${centerId}/classes/${classId}/lessons`, { lessonId }),
 };
 
 // ============================
-// B2B CONTACT (Public)
-// ============================
-export const contactApi = {
-  submit: (data) =>
-    fetch(`${API_BASE}/b2b/contact`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
-};
-
-// ============================
-// COURSES & LESSONS
+// COURSES  (api/courses)
 // ============================
 export const coursesApi = {
   getAll: (search, level, includeUnpublished = false) => {
-    let url = `${API_BASE}/courses`;
+    let url = '/courses';
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (level && level !== 'All') params.append('level', level);
     if (includeUnpublished) params.append('includeUnpublished', 'true');
     if (params.toString()) url += `?${params.toString()}`;
-    return fetch(url, { headers: headers() }).then(handleResponse);
+    return get(url);
   },
 
-  getById: (id) =>
-    fetch(`${API_BASE}/courses/${id}`, { headers: headers() }).then(handleResponse),
+  getById: (id) => get(`/courses/${id}`),
 
-  getLessons: (id) =>
-    fetch(`${API_BASE}/courses/${id}/lessons`, { headers: headers() }).then(handleResponse),
+  getLessons: (id) => get(`/courses/${id}/lessons`),
 
-  create: (data) =>
-    fetch(`${API_BASE}/courses`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  create: (data) => post('/courses', data),
 
-  update: (id, data) =>
-    fetch(`${API_BASE}/courses/${id}`, {
-      method: 'PUT',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  update: (id, data) => put(`/courses/${id}`, data),
 
-  delete: (id) =>
-    fetch(`${API_BASE}/courses/${id}`, {
-      method: 'DELETE',
-      headers: headers(),
-    }).then(handleResponse),
+  delete: (id) => del(`/courses/${id}`),
 };
 
+// ============================
+// LESSONS  (api/lessons)
+// ============================
 export const lessonsApi = {
-  getById: (id) =>
-    fetch(`${API_BASE}/lessons/${id}`, { headers: headers() }).then(handleResponse),
+  getById: (id) => get(`/lessons/${id}`),
 
-  create: (courseId, data) =>
-    fetch(`${API_BASE}/lessons/course/${courseId}`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  create: (courseId, data) => post(`/lessons/course/${courseId}`, data),
 
-  update: (id, data) =>
-    fetch(`${API_BASE}/lessons/${id}`, {
-      method: 'PUT',
-      headers: headers(),
-      body: JSON.stringify(data),
-    }).then(handleResponse),
+  update: (id, data) => put(`/lessons/${id}`, data),
 
-  delete: (id) =>
-    fetch(`${API_BASE}/lessons/${id}`, {
-      method: 'DELETE',
-      headers: headers(),
-    }).then(handleResponse),
+  delete: (id) => del(`/lessons/${id}`),
 };
 
 // ============================
-// GLOBAL ANALYTICS (Super Admin)
+// ENROLLMENTS  (api/enrollments)  — student
 // ============================
-export const analyticsApi = {
-  getGlobal: () =>
-    fetch(`${API_BASE}/analytics`, { headers: headers() }).then(handleResponse),
+export const enrollmentsApi = {
+  // body: { courseId }
+  enroll: (data) => post('/enrollments', data),
+
+  getMine: () => get('/enrollments/me'),
 };
 
+// ============================
+// GAMES  (api/games)  — minigame XP/streak
+// ============================
+export const gamesApi = {
+  // body: { gameType } → returns { sessionId }
+  start: (gameType) => post('/games/start', { gameType }),
 
+  // body: CompleteGameRequest (sessionId, score, ...)
+  complete: (data) => post('/games/complete', data),
+};
+
+// ============================
+// PRACTICE  (api/practice)  — sign-language practice flow
+// ============================
+export const practiceApi = {
+  // body: { signId }
+  startSession: (signId) => post('/practice/session/start', { signId }),
+
+  // multipart: sessionId + video file → AI scoring
+  submitAttempt: (sessionId, videoFile) => {
+    const fd = new FormData();
+    fd.append('sessionId', sessionId);
+    fd.append('video', videoFile);
+    return upload('/practice/attempt', fd);
+  },
+
+  // body: { sessionId }
+  endSession: (sessionId) => post('/practice/session/end', { sessionId }),
+
+  getHistory: (signId) => get(`/practice/history/${signId}`),
+
+  // body: ReportResultRequest (client-side scored attempt)
+  reportResult: (data) => post('/practice/report-result', data),
+};
+
+// ============================
+// PROGRESS  (api/progress)  — learner progress updates
+//   (tracking reports live under trackingApi below)
+// ============================
+export const progressApi = {
+  // body: UpdateLessonProgressRequest (lessonId, ...)
+  updateLesson: (data) => put('/progress/lesson', data),
+
+  // body: UpdateSignProgressRequest (signId, ...)
+  updateSign: (data) => put('/progress/sign', data),
+
+  // ── Backwards-compatible aliases (tracking endpoints) ──
+  getClassProgress: (classId) => get(`/tracking/classes/${classId}/students`),
+  getCenterReports: (centerId) => get(`/tracking/centers/${centerId}/reports`),
+};
+
+// ============================
+// TRACKING  (api/tracking)  — teacher/center reports
+// ============================
+export const trackingApi = {
+  getClassStudents: (classId) => get(`/tracking/classes/${classId}/students`),
+  getCenterReports: (centerId) => get(`/tracking/centers/${centerId}/reports`),
+};
+
+// ============================
+// NOTIFICATIONS  (api/notifications)
+// ============================
+export const notificationsApi = {
+  getAll: (page = 1, pageSize = 20) =>
+    get(`/notifications?page=${page}&pageSize=${pageSize}`),
+
+  markAsRead: (id) => put(`/notifications/${id}/read`),
+};
+
+// ============================
+// ONBOARDING  (api/onboarding)  — student personalization
+// ============================
+export const onboardingApi = {
+  // body: OnboardingRequest (goal, level, ...)
+  submit: (data) => post('/onboarding', data),
+};
+
+// ============================
+// SUBSCRIPTIONS  (api/plans + api/subscription/*)
+// ============================
+export const subscriptionApi = {
+  getPlans: () => get('/plans'),
+
+  getMyPlan: () => get('/subscription/me'),
+
+  // body: { planId, returnUrl }
+  upgrade: (planId, returnUrl) =>
+    post('/subscription/subscribe', { planId, returnUrl }),
+
+  getAll: () => get('/subscription/all'),
+};
+
+// ============================
+// TEACHER  (api/teacher)  — CenterAdmin/Teacher
+// ============================
+export const teacherApi = {
+  getDashboard: () => get('/teacher/dashboard'),
+
+  getClasses: () => get('/teacher/classes'),
+
+  getStudents: () => get('/teacher/students'),
+
+  // body: CreateCommentRequest (studentId, content, ...)
+  addComment: (data) => post('/teacher/comments', data),
+
+  getComments: (studentId) => get(`/teacher/students/${studentId}/comments`),
+
+  updateComment: (id, content) => put(`/teacher/comments/${id}`, { content }),
+
+  deleteComment: (id) => del(`/teacher/comments/${id}`),
+
+  // Assign a lesson to a class (also available on classesApi.assignLesson)
+  assignLesson: (centerId, classId, lessonId) =>
+    post(`/centers/${centerId}/classes/${classId}/lessons`, { lessonId }),
+};
+
+// ============================
+// VOCABULARY  (api/vocabulary)  — AI reference data management
+// ============================
+export const vocabularyApi = {
+  // body: SetReferenceRequest (signId, keypoints, ...)
+  setReference: (data) => post('/vocabulary/set-reference', data),
+
+  // multipart upload of a reference video → background keypoint extraction
+  uploadReference: (signId, videoFile) => {
+    const fd = new FormData();
+    fd.append('video', videoFile);
+    return upload(`/vocabulary/${signId}/upload-reference`, fd);
+  },
+
+  getPendingReferences: () => get('/vocabulary/pending-references'),
+
+  approveRequest: (requestId) =>
+    post(`/vocabulary/requests/${requestId}/approve`),
+
+  rejectRequest: (requestId, reason) =>
+    post(
+      `/vocabulary/requests/${requestId}/reject${
+        reason ? `?reason=${encodeURIComponent(reason)}` : ''
+      }`
+    ),
+};
+
+// ============================
+// B2B CONTACT  (api/b2b/contact)  — Public
+// ============================
+export const contactApi = {
+  submit: (data) => post('/b2b/contact', data),
+};
+
+// ============================
+// SEED  (api/seed)  — dev/demo utility
+// ============================
+export const seedApi = {
+  // POST /api/seed?reset=true wipes & reseeds; otherwise idempotent top-up
+  seed: (reset = false) => post(`/seed${reset ? '?reset=true' : ''}`),
+};

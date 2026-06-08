@@ -1,185 +1,216 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Activity, BarChart3, Building2, TrendingUp, CreditCard, PieChart, ArrowUpRight, ArrowDownRight, UserPlus, Globe, LogIn, DollarSign } from 'lucide-react';
-import { centersApi, usersApi } from '../services/api';
+import PropTypes from 'prop-types';
+import { Users, Activity, Building2, CreditCard, ArrowUpRight, ArrowDownRight, Globe, DollarSign } from 'lucide-react';
+import { centersApi, usersApi, subscriptionApi, adminApi } from '../services/api';
 
-const SuperAdminDashboard = () => {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalCenters: 0,
-    b2bUsers: 0,
-    b2cUsers: 0,
-    activeToday: 0,
-    revenue: 0,
-    systemHealth: 98
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchGlobalStats = async () => {
-      try {
-        setLoading(true);
-        const [users, centers] = await Promise.all([
-          usersApi.getAll().catch(() => []),
-          centersApi.getAll().catch(() => [])
-        ]);
-        
-        const safeUsers = Array.isArray(users) ? users : [];
-        const safeCenters = Array.isArray(centers) ? centers : [];
-
-        setStats({
-          totalUsers: safeUsers.length,
-          totalCenters: safeCenters.length,
-          b2bUsers: safeUsers.filter(u => u?.centerId).length,
-          b2cUsers: safeUsers.filter(u => !u?.centerId).length,
-          activeToday: Math.floor(safeUsers.length * 0.3),
-          revenue: safeCenters.length * 25000000,
-          systemHealth: 98
-        });
-
-      } catch (err) {
-        console.error('Failed to fetch global stats', err);
-        setError('Không thể tải một số dữ liệu thống kê. Đang hiển thị dữ liệu tạm thời.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGlobalStats();
-  }, []);
-
-  const StatCard = ({ title, value, subValue, icon: Icon, colorClass, trend }) => (
-    <div className="stat-card" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
-        <div>
-          <div className="stat-label" style={{ fontSize: '14px', fontWeight: 700, opacity: 0.8 }}>{title}</div>
-          <div className="stat-value" style={{ margin: '8px 0', fontSize: '28px' }}>{value}</div>
-          {subValue && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: trend === 'up' ? 'var(--green)' : 'var(--red)' }}>
-              {trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-              {subValue}
-            </div>
-          )}
-        </div>
-        <div className={`stat-icon ${colorClass}`} style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--white)' }}>
-          <Icon size={24} />
-        </div>
+// Tách ra ngoài để tránh re-define mỗi render (S6478)
+const StatCard = ({ title, value, subValue, icon: Icon, colorClass, trend }) => (
+  <div className="stat-card" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+      <div>
+        <div className="stat-label" style={{ fontSize: '14px', fontWeight: 700, opacity: 0.8 }}>{title}</div>
+        <div className="stat-value" style={{ margin: '8px 0', fontSize: '28px' }}>{value}</div>
+        {subValue && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: trend === 'up' ? 'var(--green)' : 'var(--red)' }}>
+            {trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+            {subValue}
+          </div>
+        )}
       </div>
-      {/* Decorative gradient background */}
-      <div style={{ 
-        position: 'absolute', bottom: '-20px', right: '-20px', 
-        width: '100px', height: '100px', borderRadius: '50%',
-        background: 'var(--primary)', opacity: 0.03
-      }}></div>
+      <div className={`stat-icon ${colorClass}`} style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--white)' }}>
+        <Icon size={24} />
+      </div>
+    </div>
+    <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'var(--primary)', opacity: 0.03 }} />
+  </div>
+);
+StatCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  subValue: PropTypes.string,
+  icon: PropTypes.elementType.isRequired,
+  colorClass: PropTypes.string.isRequired,
+  trend: PropTypes.oneOf(['up', 'down']),
+};
+
+// Bars trong biểu đồ phân bổ — tách riêng để giảm nesting depth (S2004)
+const DistBar = ({ count, total, color }) => {
+  const pct = total > 0 ? (count / total) * 100 : 0;
+  return (
+    <div style={{ height: '120px', width: '40px', background: 'var(--gray-100)', borderRadius: '20px', margin: '0 auto', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+      <div style={{ height: `${pct}%`, width: '100%', background: color }} />
     </div>
   );
+};
+DistBar.propTypes = {
+  count: PropTypes.number.isRequired,
+  total: PropTypes.number.isRequired,
+  color: PropTypes.string.isRequired,
+};
+
+const INITIAL_STATS = {
+  totalUsers: 0, totalCenters: 0,
+  b2bUsers: 0, b2cUsers: 0,
+  premiumUsers: 0, basicUsers: 0, freeUsers: 0,
+  conversionRate: 0, retentionRate: 0, revenue: 0,
+};
+
+// Module-level để tránh nesting quá 4 cấp (S2004)
+const loadGlobalStats = async (setStats, setLoading) => {
+  try {
+    const [dash, centers] = await Promise.all([
+      adminApi.getDashboard().catch(() => null),
+      centersApi.getAll().catch(() => []),
+    ]);
+    const safeCenters = Array.isArray(centers) ? centers : [];
+
+    if (dash) {
+      setStats({
+        totalUsers: dash.totalUsers ?? 0,
+        totalCenters: dash.activeCenters ?? safeCenters.length,
+        b2bUsers: (dash.totalUsers ?? 0) - (dash.b2cUsers ?? 0),
+        b2cUsers: dash.b2cUsers ?? 0,
+        premiumUsers: dash.premiumUsers ?? 0,
+        basicUsers: dash.basicUsers ?? 0,
+        freeUsers: dash.freeUsers ?? 0,
+        conversionRate: dash.conversionRate ?? 0,
+        retentionRate: dash.retentionRate ?? 0,
+        revenue: dash.totalRevenue ?? 0,
+      });
+      return;
+    }
+
+    // Fallback: derive từ raw lists
+    const [users, subs] = await Promise.all([
+      usersApi.getAll().catch(() => []),
+      subscriptionApi.getAll().catch(() => []),
+    ]);
+    const safeUsers = Array.isArray(users) ? users : [];
+    const safeSubs = Array.isArray(subs) ? subs : [];
+    const b2bCount = safeUsers.filter(u => u?.centerId).length;
+    const revenue = safeSubs.reduce((acc, s) => acc + (s.priceVnd || 0), 0);
+    setStats(prev => ({
+      ...prev,
+      totalUsers: safeUsers.length,
+      totalCenters: safeCenters.length,
+      b2bUsers: b2bCount,
+      b2cUsers: safeUsers.length - b2bCount,
+      revenue,
+    }));
+  } catch (err) {
+    console.error('Failed to fetch global stats', err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const SuperAdminDashboard = () => {
+  const [stats, setStats] = useState(INITIAL_STATS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { loadGlobalStats(setStats, setLoading); }, []);
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}><div className="spinning">Loading...</div></div>;
   }
 
+  const planRows = [
+    { label: 'Gói Premium (Nâng cao)', count: stats.premiumUsers, color: 'var(--yellow)' },
+    { label: 'Gói Basic (Cơ bản)',     count: stats.basicUsers,   color: 'var(--blue)'   },
+    { label: 'Gói Free (Miễn phí)',    count: stats.freeUsers,    color: 'var(--gray-300)' },
+  ];
+
+  const distCols = [
+    { label: 'B2B (Hợp tác)', count: stats.b2bUsers,    color: 'linear-gradient(to top, var(--primary), var(--purple))' },
+    { label: 'B2C (Cá nhân)', count: stats.b2cUsers,    color: 'linear-gradient(to top, var(--blue), var(--green))'     },
+    { label: 'Premium',       count: stats.premiumUsers, color: 'linear-gradient(to top, var(--yellow), var(--orange))'  },
+    { label: 'Free',          count: stats.freeUsers,    color: 'var(--gray-300)'                                        },
+  ];
+
   return (
     <>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="page-title">CEO Management Center (SignMate)</h1>
+          <h1 className="page-title">CEO Management Center</h1>
           <p className="page-subtitle">Theo dõi các chỉ số tăng trưởng, tài chính và quan hệ đối tác B2B</p>
         </div>
-        <button className="btn btn-primary" onClick={() => window.location.href='/admin/revenue'}>
-           <CreditCard size={18} style={{ marginRight: '8px' }} /> Xem Báo Cáo Tài Chính
+        <button className="btn btn-primary" onClick={() => globalThis.location.href = '/admin/revenue'}>
+          <CreditCard size={18} style={{ marginRight: '8px' }} /> Báo Cáo Tài Chính
         </button>
       </div>
 
       <div className="stat-grid" style={{ marginBottom: '32px' }}>
-        <StatCard title="Tổng người dùng" value={stats.totalUsers.toLocaleString()} subValue="+12% so với tháng trước" trend="up" icon={Users} colorClass="card-icon-blue" />
-        <StatCard title="Đối tác B2B (Trung tâm)" value={stats.totalCenters} subValue="+2 đối tác mới" trend="up" icon={Building2} colorClass="card-icon-purple" />
-        <div style={{ cursor: 'pointer' }} onClick={() => window.location.href='/admin/revenue'}>
-          <StatCard title="Doanh thu thực thu" value={`${(stats.revenue / 1000000).toFixed(1)}M`} subValue="+8.5% tháng này" trend="up" icon={DollarSign} colorClass="card-icon-green" />
-        </div>
-        <StatCard title="Chỉ số Sức khỏe" value={`${stats.systemHealth || 98}%`} subValue="API: Ổn định" trend="up" icon={Activity} colorClass="card-icon-yellow" />
+        <StatCard title="Tổng người dùng" value={stats.totalUsers.toLocaleString()} subValue={`${stats.premiumUsers} Premium · ${stats.freeUsers} Free`} trend="up" icon={Users} colorClass="card-icon-blue" />
+        <StatCard title="Đối tác B2B (Trung tâm)" value={stats.totalCenters} subValue={`${stats.b2bUsers} B2B · ${stats.b2cUsers} B2C`} trend="up" icon={Building2} colorClass="card-icon-purple" />
+        <button style={{ all: 'unset', display: 'block', cursor: 'pointer', width: '100%' }} onClick={() => globalThis.location.href = '/admin/revenue'}>
+          <StatCard title="Doanh thu thực thu" value={stats.revenue > 0 ? `${(stats.revenue / 1_000_000).toFixed(1)}M ₫` : '—'} subValue="Xem chi tiết →" trend="up" icon={DollarSign} colorClass="card-icon-green" />
+        </button>
+        <StatCard title="Chuyển đổi Free → Paid" value={`${(stats.conversionRate || 0).toFixed(1)}%`} subValue={`Retention: ${(stats.retentionRate || 0).toFixed(1)}%`} trend="up" icon={Activity} colorClass="card-icon-yellow" />
       </div>
 
       <div className="grid-2" style={{ gap: '24px', marginBottom: '32px' }}>
-        {/* User Distribution Chart Placeholder */}
+        {/* Phân bổ người dùng */}
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h3 style={{ margin: 0 }}>Phân bổ Người dùng</h3>
             <span className="badge badge-blue">Platform-wide</span>
           </div>
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center', justifyContent: 'center', height: '180px' }}>
-            {/* Visual breakdown bars */}
-            <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ height: '120px', width: '40px', background: 'var(--gray-100)', borderRadius: '20px', margin: '0 auto', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                <div style={{ height: `${(stats.b2bUsers / stats.totalUsers) * 100}%`, width: '100%', background: 'linear-gradient(to top, var(--primary), var(--purple))' }}></div>
+            {distCols.map(({ label, count, color }) => (
+              <div key={label} style={{ textAlign: 'center', flex: 1 }}>
+                <DistBar count={count} total={stats.totalUsers} color={color} />
+                <div style={{ marginTop: '12px', fontWeight: 800 }}>{count}</div>
+                <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>{label}</div>
               </div>
-              <div style={{ marginTop: '12px', fontWeight: 800 }}>{stats.b2bUsers}</div>
-              <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>B2B (Hợp tác)</div>
-            </div>
-            <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ height: '120px', width: '40px', background: 'var(--gray-100)', borderRadius: '20px', margin: '0 auto', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                <div style={{ height: `${(stats.b2cUsers / stats.totalUsers) * 100}%`, width: '100%', background: 'linear-gradient(to top, var(--blue), var(--green))' }}></div>
-              </div>
-              <div style={{ marginTop: '12px', fontWeight: 800 }}>{stats.b2cUsers}</div>
-              <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>B2C (Cá nhân)</div>
-            </div>
-            <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ height: '120px', width: '40px', background: 'var(--gray-100)', borderRadius: '20px', margin: '0 auto', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                <div style={{ height: '15%', width: '100%', background: 'var(--gray-300)' }}></div>
-              </div>
-              <div style={{ marginTop: '12px', fontWeight: 800 }}>{(stats.totalUsers * 0.05).toFixed(0)}</div>
-              <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>Đang Chờ</div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Quick Actions Card */}
+        {/* Thao tác nhanh */}
         <div className="card" style={{ background: 'linear-gradient(135deg, var(--white) 0%, #f4f0ff 100%)' }}>
           <h3 style={{ marginBottom: '16px' }}>Thao tác Nhanh</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <button 
-              className="btn btn-white" 
-              style={{ display: 'flex', flexDirection: 'column', height: '100px', justifyContent: 'center', gap: '8px', border: '1px solid var(--gray-100)' }}
-              onClick={() => window.location.href = '/admin/users'}
-            >
-              <Users size={24} color="var(--blue)" />
-              <span>Quản lý người dùng</span>
-            </button>
-            <button 
-              className="btn btn-white" 
-              style={{ display: 'flex', flexDirection: 'column', height: '100px', justifyContent: 'center', gap: '8px', border: '1px solid var(--gray-100)' }}
-              onClick={() => window.location.href = '/admin/b2b'}
-            >
-              <Building2 size={24} color="var(--primary)" />
-              <span>Cài đặt Trung tâm</span>
-            </button>
-            <button className="btn btn-white" style={{ display: 'flex', flexDirection: 'column', height: '100px', justifyContent: 'center', gap: '8px', border: '1px solid var(--gray-100)' }}>
-              <Globe size={24} color="var(--green)" />
-              <span>Cập nhật Landing</span>
-            </button>
-            <button className="btn btn-white" style={{ display: 'flex', flexDirection: 'column', height: '100px', justifyContent: 'center', gap: '8px', border: '1px solid var(--gray-100)' }}>
-              <CreditCard size={24} color="var(--yellow)" />
-              <span>Báo cáo doanh thu</span>
-            </button>
+            {[
+              { icon: <Users size={24} color="var(--blue)" />,     label: 'Quản lý người dùng', href: '/admin/users' },
+              { icon: <Building2 size={24} color="var(--primary)" />, label: 'Cài đặt Trung tâm',  href: '/admin/b2b' },
+              { icon: <Globe size={24} color="var(--green)" />,    label: 'Nội dung khoá học',  href: '/admin/content' },
+              { icon: <CreditCard size={24} color="var(--yellow)" />, label: 'Báo cáo doanh thu', href: '/admin/revenue' },
+            ].map(({ icon, label, href }) => (
+              <button
+                key={label}
+                className="btn btn-white"
+                style={{ display: 'flex', flexDirection: 'column', height: '100px', justifyContent: 'center', gap: '8px', border: '1px solid var(--gray-100)' }}
+                onClick={() => globalThis.location.href = href}
+              >
+                {icon}
+                <span>{label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
+      {/* Phân bổ gói dịch vụ */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3>Kế hoạch Phát triển Hệ thống</h3>
-          <ArrowUpRight size={20} color="var(--primary)" />
+          <h3>Phân bổ Gói dịch vụ</h3>
+          <button className="btn btn-outline btn-sm" onClick={() => globalThis.location.href = '/admin/subscriptions'}>
+            Quản lý <ArrowUpRight size={14} />
+          </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: '12px', background: 'var(--gray-50)' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--green)' }}></div>
-            <div style={{ flex: 1, fontSize: '15px' }}>Tích hợp thanh toán QR Code mới (VNPAY/Momo)</div>
-            <div style={{ fontSize: '13px', color: 'var(--gray-400)', fontWeight: 700 }}>Hoàn thành 80%</div>
+        {planRows.map(({ label, count, color }) => (
+          <div key={label} style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '14px', fontWeight: 700 }}>
+              <span>{label}</span>
+              <span style={{ color: 'var(--gray-500)' }}>
+                {count} user ({stats.totalUsers > 0 ? ((count / stats.totalUsers) * 100).toFixed(0) : 0}%)
+              </span>
+            </div>
+            <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '99px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${stats.totalUsers > 0 ? (count / stats.totalUsers) * 100 : 0}%`, background: color, borderRadius: '99px', transition: 'width 0.8s ease' }} />
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: '12px', background: 'var(--gray-50)' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--blue)' }}></div>
-            <div style={{ flex: 1, fontSize: '15px' }}>Nâng cấp máy chủ AI cho chức năng Feedback luyện tập</div>
-            <div style={{ fontSize: '13px', color: 'var(--gray-400)', fontWeight: 700 }}>Đang triển khai</div>
-          </div>
-        </div>
+        ))}
       </div>
     </>
   );

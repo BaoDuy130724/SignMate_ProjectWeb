@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Plus, X, Loader2, CheckCircle2, UserPlus, GraduationCap, AlertCircle, UserCheck, Users, Layers, PlayCircle, Clock } from 'lucide-react';
+import { BookOpen, Plus, X, Loader2, CheckCircle2, UserPlus, GraduationCap, AlertCircle, UserCheck, Users, Layers, PlayCircle, Clock, Edit, Trash2 } from 'lucide-react';
 import { centersApi, classesApi, coursesApi, teacherApi } from '../services/api';
 
 const CenterClasses = () => {
@@ -10,6 +10,10 @@ const CenterClasses = () => {
   const [showClassForm, setShowClassForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newClass, setNewClass] = useState({ name: '', teacherId: '' });
+  const [editingClass, setEditingClass] = useState(null);
+  const [detailClass, setDetailClass] = useState(null);
+  const [detailStudents, setDetailStudents] = useState([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [addStudentModal, setAddStudentModal] = useState({ visible: false, classId: '', className: '' });
   const [assignLessonModal, setAssignLessonModal] = useState({ visible: false, classId: '', className: '' });
   const [toast, setToast] = useState(null);
@@ -53,6 +57,66 @@ const CenterClasses = () => {
       showToast('Lỗi tạo lớp học: ' + err.message, 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateClass = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await classesApi.update(centerId, editingClass.id, {
+        name: editingClass.name,
+        teacherId: editingClass.teacherId
+      });
+      setEditingClass(null);
+      showToast('Cập nhật lớp học thành công! 🎉');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi cập nhật: ' + err.message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteClass = async (classId, studentCount) => {
+    if (studentCount > 0) {
+      showToast('Không thể xóa lớp đang có học viên!', 'error');
+      return;
+    }
+    if (!window.confirm('Bạn có chắc chắn muốn xóa lớp học này không?')) return;
+    try {
+      await classesApi.delete(centerId, classId);
+      showToast('Đã xóa lớp học thành công! 🗑️');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi: ' + err.message, 'error');
+    }
+  };
+
+  const handleOpenDetails = async (cls) => {
+    setDetailClass(cls);
+    setLoadingDetails(true);
+    try {
+      const data = await classesApi.getStudents(centerId, cls.id);
+      setDetailStudents(data || []);
+    } catch (err) {
+      showToast('Lỗi tải học viên của lớp: ' + err.message, 'error');
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleRemoveStudent = async (studentId) => {
+    if (!detailClass) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn gỡ học viên khỏi lớp ${detailClass.name}?`)) return;
+    try {
+      await classesApi.removeStudent(centerId, detailClass.id, studentId);
+      showToast('Đã gỡ học viên khỏi lớp! 🗑️');
+      const data = await classesApi.getStudents(centerId, detailClass.id);
+      setDetailStudents(data || []);
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi gỡ học viên: ' + err.message, 'error');
     }
   };
 
@@ -172,12 +236,21 @@ const CenterClasses = () => {
                   {c.createdAt ? new Date(c.createdAt).toLocaleDateString('vi-VN') : '—'}
                 </td>
                 <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-purple btn-sm" onClick={() => setAssignLessonModal({ visible: true, classId: c.id, className: c.name })}>
-                      <BookOpen size={14} /> Giao bài
+                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <button className="btn btn-purple btn-sm" onClick={() => setAssignLessonModal({ visible: true, classId: c.id, className: c.name })} title="Giao bài tập">
+                      <BookOpen size={13} /> Giao bài
                     </button>
-                    <button className="btn btn-blue btn-sm" onClick={() => setAddStudentModal({ visible: true, classId: c.id, className: c.name })}>
-                      <UserPlus size={14} /> Thêm HV
+                    <button className="btn btn-blue btn-sm" onClick={() => setAddStudentModal({ visible: true, classId: c.id, className: c.name })} title="Thêm học viên">
+                      <UserPlus size={13} /> Thêm HV
+                    </button>
+                    <button className="btn btn-white btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={() => handleOpenDetails(c)} title="Danh sách học viên">
+                      <Users size={13} /> HV
+                    </button>
+                    <button className="btn btn-white btn-sm" style={{ padding: '6px 10px' }} onClick={() => setEditingClass(c)} title="Sửa lớp">
+                      <Edit size={13} />
+                    </button>
+                    <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2', padding: '6px 10px' }} onClick={() => handleDeleteClass(c.id, c.studentCount)} title="Xóa lớp">
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </td>
@@ -195,6 +268,95 @@ const CenterClasses = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Edit Class Modal */}
+      {editingClass && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '480px', boxShadow: '0 32px 64px rgba(0,0,0,0.2)', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0 }}>Chỉnh sửa Lớp học</h3>
+              <button onClick={() => setEditingClass(null)} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdateClass} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Tên lớp học</label>
+                <input type="text" className="form-input" required
+                  value={editingClass.name} onChange={e => setEditingClass({...editingClass, name: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Giáo viên phụ trách</label>
+                <select className="form-input" required value={editingClass.teacherId || ''}
+                  onChange={e => setEditingClass({...editingClass, teacherId: e.target.value})}>
+                  <option value="">-- Chọn Giáo Viên --</option>
+                  {teachers.map(t => (
+                    <option key={t.id} value={t.id}>{t.fullName} ({t.email})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="button" className="btn btn-white" onClick={() => setEditingClass(null)}>Hủy</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="spinning" size={16} /> : <CheckCircle2 size={16} />}
+                  {isSubmitting ? ' Đang lưu...' : ' Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Class Details Modal */}
+      {detailClass && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 32px 64px rgba(0,0,0,0.2)', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Danh sách Học viên</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--gray-400)' }}>Lớp: <strong>{detailClass.name}</strong> • GV: {detailClass.teacherName || 'Chưa phân công'}</p>
+              </div>
+              <button onClick={() => setDetailClass(null)} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+            </div>
+            
+            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px' }}>
+              {loadingDetails ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinning" size={24} /></div>
+              ) : detailStudents.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-300)' }}>
+                  <Users size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                  <p>Chưa có học viên nào trong lớp này.</p>
+                </div>
+              ) : (
+                <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)' }}>
+                      <th style={{ padding: '12px' }}>Học viên</th>
+                      <th style={{ padding: '12px' }}>Email</th>
+                      <th style={{ padding: '12px', textAlign: 'right' }}>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailStudents.map(s => (
+                      <tr key={s.studentId} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                        <td style={{ padding: '12px', fontWeight: 700 }}>{s.fullName}</td>
+                        <td style={{ padding: '12px', color: 'var(--gray-500)', fontSize: '13px' }}>{s.email}</td>
+                        <td style={{ padding: '12px', textAlign: 'right' }}>
+                          <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2', padding: '4px 8px' }} onClick={() => handleRemoveStudent(s.studentId)}>
+                            <Trash2 size={12} /> Gỡ khỏi lớp
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid var(--gray-100)' }}>
+              <button className="btn btn-white btn-sm" onClick={() => setDetailClass(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

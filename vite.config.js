@@ -10,7 +10,7 @@ export default defineConfig({
     // Proxy API requests to .NET Backend (SignMate_BE)
     proxy: {
       '/api': {
-        target: 'http://signmate.runasp.net',
+        target: 'http://localhost:5184',
         changeOrigin: true,
         secure: false,
       }

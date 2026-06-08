@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Activity, Target, GraduationCap, CreditCard, Loader2, Plus, X, BookOpen, UserPlus, CheckCircle2, AlertCircle, Eye, EyeOff, UserCheck } from 'lucide-react';
+import { Users, Activity, Target, GraduationCap, CreditCard, Loader2, Plus, X, BookOpen, UserPlus, CheckCircle2, AlertCircle, Eye, EyeOff, UserCheck, Edit, Trash2 } from 'lucide-react';
 import { centersApi, classesApi } from '../services/api';
 
 // ===== Toast Notification =====
@@ -268,6 +268,12 @@ const CenterAdminDashboard = () => {
 
   // Add students modal
   const [addStudentModal, setAddStudentModal] = useState({ visible: false, classId: '', className: '' });
+  const [editingTeacher, setEditingTeacher] = useState(null);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [editingClass, setEditingClass] = useState(null);
+  const [detailClass, setDetailClass] = useState(null);
+  const [detailStudents, setDetailStudents] = useState([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   // Toast
   const [toast, setToast] = useState(null);
@@ -345,6 +351,122 @@ const CenterAdminDashboard = () => {
       showToast('Lỗi: ' + (err.message || 'Không thể tạo học viên'), 'error');
     } finally {
       setIsSubmittingStudent(false);
+    }
+  };
+
+  const handleUpdateTeacher = async (e) => {
+    e.preventDefault();
+    setIsSubmittingTeacher(true);
+    try {
+      await centersApi.updateMember(centerId, editingTeacher.id, {
+        fullName: editingTeacher.fullName
+      });
+      setEditingTeacher(null);
+      showToast('Cập nhật giáo viên thành công! 🎉');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi cập nhật: ' + err.message, 'error');
+    } finally {
+      setIsSubmittingTeacher(false);
+    }
+  };
+
+  const handleDeleteTeacher = async (teacherId, fullName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa giáo viên ${fullName} khỏi hệ thống không?`)) return;
+    try {
+      await centersApi.deleteMember(centerId, teacherId);
+      showToast('Đã xóa giáo viên thành công! 🗑️');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi xóa giáo viên: ' + err.message, 'error');
+    }
+  };
+
+  const handleUpdateStudent = async (e) => {
+    e.preventDefault();
+    setIsSubmittingStudent(true);
+    try {
+      await centersApi.updateMember(centerId, editingStudent.id, {
+        fullName: editingStudent.fullName
+      });
+      setEditingStudent(null);
+      showToast('Cập nhật học viên thành công! 🎉');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi cập nhật: ' + err.message, 'error');
+    } finally {
+      setIsSubmittingStudent(false);
+    }
+  };
+
+  const handleDeleteStudent = async (studentId, fullName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa học viên ${fullName} khỏi hệ thống không?`)) return;
+    try {
+      await centersApi.deleteMember(centerId, studentId);
+      showToast('Đã xóa học viên thành công! 🗑️');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi xóa học viên: ' + err.message, 'error');
+    }
+  };
+
+  const handleUpdateClass = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await classesApi.update(centerId, editingClass.id, {
+        name: editingClass.name,
+        teacherId: editingClass.teacherId
+      });
+      setEditingClass(null);
+      showToast('Cập nhật lớp học thành công! 🎉');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi cập nhật: ' + err.message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteClass = async (classId, studentCount) => {
+    if (studentCount > 0) {
+      showToast('Không thể xóa lớp đang có học viên!', 'error');
+      return;
+    }
+    if (!window.confirm('Bạn có chắc chắn muốn xóa lớp học này không?')) return;
+    try {
+      await classesApi.delete(centerId, classId);
+      showToast('Đã xóa lớp học thành công! 🗑️');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi: ' + err.message, 'error');
+    }
+  };
+
+  const handleOpenClassDetails = async (cls) => {
+    setDetailClass(cls);
+    setLoadingDetails(true);
+    try {
+      const data = await classesApi.getStudents(centerId, cls.id);
+      setDetailStudents(data || []);
+    } catch (err) {
+      showToast('Lỗi tải học viên của lớp: ' + err.message, 'error');
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleRemoveStudentFromClass = async (studentId) => {
+    if (!detailClass) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn gỡ học viên khỏi lớp ${detailClass.name}?`)) return;
+    try {
+      await classesApi.removeStudent(centerId, detailClass.id, studentId);
+      showToast('Đã gỡ học viên khỏi lớp! 🗑️');
+      const data = await classesApi.getStudents(centerId, detailClass.id);
+      setDetailStudents(data || []);
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi gỡ học viên: ' + err.message, 'error');
     }
   };
 
@@ -594,11 +716,24 @@ const CenterAdminDashboard = () => {
                         <span style={{ color: 'var(--gray-300)', marginLeft: '4px' }}>học viên</span>
                       </td>
                       <td><span className="badge badge-green">Đang hoạt động</span></td>
-                      <td>
-                        <button className="btn btn-blue btn-sm" style={{ padding: '8px 14px', fontSize: '13px' }}
-                          onClick={() => setAddStudentModal({ visible: true, classId: c.id, className: c.name })}>
-                          <UserPlus size={14} /> Thêm HV
-                        </button>
+                      <td style={{ padding: '8px 24px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button className="btn btn-purple btn-sm" style={{ padding: '6px 10px', fontSize: '12px' }} onClick={() => setAssignLessonModal({ visible: true, classId: c.id, className: c.name })} title="Giao bài">
+                            <BookOpen size={13} />
+                          </button>
+                          <button className="btn btn-blue btn-sm" style={{ padding: '6px 10px', fontSize: '12px' }} onClick={() => setAddStudentModal({ visible: true, classId: c.id, className: c.name })} title="Thêm học viên">
+                            <UserPlus size={13} />
+                          </button>
+                          <button className="btn btn-white btn-sm" style={{ padding: '6px 10px', fontSize: '12px' }} onClick={() => handleOpenClassDetails(c)} title="Danh sách học viên">
+                            <Users size={13} />
+                          </button>
+                          <button className="btn btn-white btn-sm" style={{ padding: '6px 10px' }} onClick={() => setEditingClass(c)} title="Sửa lớp">
+                            <Edit size={13} />
+                          </button>
+                          <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2', padding: '6px 10px' }} onClick={() => handleDeleteClass(c.id, c.studentCount)} title="Xóa lớp">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -653,6 +788,7 @@ const CenterAdminDashboard = () => {
                     <th>Email</th>
                     <th>Ngày tạo</th>
                     <th>Trạng thái</th>
+                    <th style={{ width: '120px', textAlign: 'right', paddingRight: '24px' }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -677,11 +813,17 @@ const CenterAdminDashboard = () => {
                         {s.createdAt ? new Date(s.createdAt).toLocaleDateString('vi-VN') : '—'}
                       </td>
                       <td><span className="badge badge-green">Hoạt động</span></td>
+                      <td style={{ padding: '12px 24px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button className="btn btn-white btn-sm" style={{ padding: '6px 8px' }} onClick={() => setEditingStudent(s)} title="Sửa thông tin"><Edit size={14} /></button>
+                          <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2', padding: '6px 8px' }} onClick={() => handleDeleteStudent(s.id, s.fullName)} title="Xóa học viên"><Trash2 size={14} /></button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {students.length === 0 && (
                     <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--gray-300)' }}>
+                      <td colSpan="6" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--gray-300)' }}>
                         <Users size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
                         <div style={{ fontWeight: 700, marginBottom: '4px' }}>Chưa có học viên nào</div>
                         <div style={{ fontSize: '14px' }}>Nhấn "Thêm Học viên" để cấp tài khoản</div>
@@ -730,6 +872,7 @@ const CenterAdminDashboard = () => {
                     <th>Email</th>
                     <th>Ngày tạo</th>
                     <th>Trạng thái</th>
+                    <th style={{ width: '120px', textAlign: 'right', paddingRight: '24px' }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -754,11 +897,17 @@ const CenterAdminDashboard = () => {
                         {t.createdAt ? new Date(t.createdAt).toLocaleDateString('vi-VN') : '—'}
                       </td>
                       <td><span className="badge badge-green">Hoạt động</span></td>
+                      <td style={{ padding: '12px 24px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button className="btn btn-white btn-sm" style={{ padding: '6px 8px' }} onClick={() => setEditingTeacher(t)} title="Sửa thông tin"><Edit size={14} /></button>
+                          <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2', padding: '6px 8px' }} onClick={() => handleDeleteTeacher(t.id, t.fullName)} title="Xóa giáo viên"><Trash2 size={14} /></button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {teachers.length === 0 && (
                     <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--gray-300)' }}>
+                      <td colSpan="6" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--gray-300)' }}>
                         <Users size={40} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
                         <div style={{ fontWeight: 700, marginBottom: '4px' }}>Chưa có giáo viên nào</div>
                         <div style={{ fontSize: '14px' }}>Nhấn "Thêm Giáo viên" để cấp tài khoản</div>
@@ -812,6 +961,155 @@ const CenterAdminDashboard = () => {
           to { opacity: 1; transform: scale(1); }
         }
       `}</style>
+
+      {/* Edit Teacher Modal */}
+      {editingTeacher && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '480px', boxShadow: '0 32px 64px rgba(0,0,0,0.2)', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0 }}>Chỉnh sửa Giáo viên</h3>
+              <button onClick={() => setEditingTeacher(null)} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdateTeacher} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Họ và tên</label>
+                <input type="text" className="form-input" required
+                  value={editingTeacher.fullName} onChange={e => setEditingTeacher({...editingTeacher, fullName: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email đăng nhập</label>
+                <input type="email" className="form-input" disabled value={editingTeacher.email} style={{ background: 'var(--gray-50)', color: 'var(--gray-400)' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="button" className="btn btn-white" onClick={() => setEditingTeacher(null)}>Hủy</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmittingTeacher}>
+                  {isSubmittingTeacher ? <Loader2 className="spinning" size={16} /> : <CheckCircle2 size={16} />}
+                  {isSubmittingTeacher ? ' Đang lưu...' : ' Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Student Modal */}
+      {editingStudent && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '480px', boxShadow: '0 32px 64px rgba(0,0,0,0.2)', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0 }}>Chỉnh sửa Học viên</h3>
+              <button onClick={() => setEditingStudent(null)} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdateStudent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Họ và tên</label>
+                <input type="text" className="form-input" required
+                  value={editingStudent.fullName} onChange={e => setEditingStudent({...editingStudent, fullName: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email đăng nhập</label>
+                <input type="email" className="form-input" disabled value={editingStudent.email} style={{ background: 'var(--gray-50)', color: 'var(--gray-400)' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="button" className="btn btn-white" onClick={() => setEditingStudent(null)}>Hủy</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmittingStudent}>
+                  {isSubmittingStudent ? <Loader2 className="spinning" size={16} /> : <CheckCircle2 size={16} />}
+                  {isSubmittingStudent ? ' Đang lưu...' : ' Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Class Modal */}
+      {editingClass && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '480px', boxShadow: '0 32px 64px rgba(0,0,0,0.2)', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0 }}>Chỉnh sửa Lớp học</h3>
+              <button onClick={() => setEditingClass(null)} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdateClass} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Tên lớp học</label>
+                <input type="text" className="form-input" required
+                  value={editingClass.name} onChange={e => setEditingClass({...editingClass, name: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Giáo viên phụ trách</label>
+                <select className="form-input" required value={editingClass.teacherId || ''}
+                  onChange={e => setEditingClass({...editingClass, teacherId: e.target.value})}>
+                  <option value="">-- Chọn Giáo Viên --</option>
+                  {teachers.map(t => (
+                    <option key={t.id} value={t.id}>{t.fullName} ({t.email})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="button" className="btn btn-white" onClick={() => setEditingClass(null)}>Hủy</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="spinning" size={16} /> : <CheckCircle2 size={16} />}
+                  {isSubmitting ? ' Đang lưu...' : ' Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Class Details Modal */}
+      {detailClass && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 32px 64px rgba(0,0,0,0.2)', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Danh sách Học viên</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--gray-400)' }}>Lớp: <strong>{detailClass.name}</strong> • GV: {detailClass.teacherName || 'Chưa phân công'}</p>
+              </div>
+              <button onClick={() => setDetailClass(null)} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+            </div>
+            
+            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px' }}>
+              {loadingDetails ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinning" size={24} /></div>
+              ) : detailStudents.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--gray-300)' }}>
+                  <Users size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+                  <p>Chưa có học viên nào trong lớp này.</p>
+                </div>
+              ) : (
+                <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)' }}>
+                      <th style={{ padding: '12px' }}>Học viên</th>
+                      <th style={{ padding: '12px' }}>Email</th>
+                      <th style={{ padding: '12px', textAlign: 'right' }}>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailStudents.map(s => (
+                      <tr key={s.studentId} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                        <td style={{ padding: '12px', fontWeight: 700 }}>{s.fullName}</td>
+                        <td style={{ padding: '12px', color: 'var(--gray-500)', fontSize: '13px' }}>{s.email}</td>
+                        <td style={{ padding: '12px', textAlign: 'right' }}>
+                          <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2', padding: '4px 8px' }} onClick={() => handleRemoveStudentFromClass(s.studentId)}>
+                            <Trash2 size={12} /> Gỡ khỏi lớp
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid var(--gray-100)' }}>
+              <button className="btn btn-white btn-sm" onClick={() => setDetailClass(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -152,7 +152,7 @@ const UserManagement = () => {
                     </div>
                     <div>
                       <div style={{ fontWeight: 800, color: 'var(--text-dark)' }}>{user.fullName}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>ID: {user.id.substring(0, 8)}...</div>
+                      <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>ID: #{user.id}</div>
                     </div>
                   </div>
                 </td>

@@ -11,6 +11,7 @@ const CenterStudents = () => {
   const [newStudent, setNewStudent] = useState({ fullName: '', email: '', password: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [toast, setToast] = useState(null);
+  const [editingStudent, setEditingStudent] = useState(null);
 
   const centerId = localStorage.getItem('centerId');
 
@@ -46,6 +47,34 @@ const CenterStudents = () => {
       showToast('Lỗi: ' + err.message, 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateStudent = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await centersApi.updateMember(centerId, editingStudent.id, {
+        fullName: editingStudent.fullName
+      });
+      setEditingStudent(null);
+      showToast('Cập nhật thông tin học viên thành công! 🎉');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi cập nhật: ' + err.message, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteStudent = async (studentId, fullName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa học viên ${fullName} khỏi hệ thống không?`)) return;
+    try {
+      await centersApi.deleteMember(centerId, studentId);
+      showToast('Đã xóa học viên thành công! 🗑️');
+      await loadData();
+    } catch (err) {
+      showToast('Lỗi xóa học viên: ' + err.message, 'error');
     }
   };
 
@@ -188,8 +217,8 @@ const CenterStudents = () => {
                 </td>
                 <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                     <button className="btn btn-white btn-sm" title="Xem tiến trình"><Target size={14} /></button>
-                     <button className="btn btn-white btn-sm" title="Sửa thông tin"><Edit size={14} /></button>
+                     <button className="btn btn-white btn-sm" onClick={() => setEditingStudent(s)} title="Sửa thông tin"><Edit size={14} /></button>
+                     <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2' }} onClick={() => handleDeleteStudent(s.id, s.fullName)} title="Xóa học viên"><Trash2 size={14} /></button>
                   </div>
                 </td>
               </tr>
@@ -204,6 +233,36 @@ const CenterStudents = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Edit Student Modal */}
+      {editingStudent && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '480px', boxShadow: '0 32px 64px rgba(0,0,0,0.2)', background: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0 }}>Chỉnh sửa Học viên</h3>
+              <button onClick={() => setEditingStudent(null)} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleUpdateStudent} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="form-group">
+                <label className="form-label">Họ và tên</label>
+                <input type="text" className="form-input" required
+                  value={editingStudent.fullName} onChange={e => setEditingStudent({...editingStudent, fullName: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email đăng nhập</label>
+                <input type="email" className="form-input" disabled value={editingStudent.email} style={{ background: 'var(--gray-50)', color: 'var(--gray-400)' }} />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="button" className="btn btn-white" onClick={() => setEditingStudent(null)}>Hủy</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="spinning" size={16} /> : <CheckCircle2 size={16} />}
+                  {isSubmitting ? ' Đang lưu...' : ' Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 };

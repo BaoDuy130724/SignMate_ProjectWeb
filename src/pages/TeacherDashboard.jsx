@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Target, BookOpen, FileText, Download, Loader2 } from 'lucide-react';
-import { classesApi, progressApi } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Users, Target, BookOpen, FileText, Download, Loader2, MessageSquare, Plus, Trash2, Edit, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { classesApi, progressApi, teacherApi } from '../services/api';
 
 const TeacherDashboard = () => {
   const [classes, setClasses] = useState([]);
@@ -8,6 +8,20 @@ const TeacherDashboard = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [newCommentText, setNewCommentText] = useState('');
+  const [editingComment, setEditingComment] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,6 +61,69 @@ const TeacherDashboard = () => {
         console.error(err);
     }
     setLoading(false);
+  };
+
+  const handleOpenComments = async (student) => {
+    setSelectedStudent(student);
+    setLoadingComments(true);
+    try {
+      const data = await teacherApi.getComments(student.studentId);
+      setComments(data || []);
+    } catch (err) {
+      showToast('Lỗi tải nhận xét: ' + err.message, 'error');
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!newCommentText.trim()) return;
+    setIsSubmittingComment(true);
+    try {
+      await teacherApi.addComment({
+        studentId: selectedStudent.studentId.toString(),
+        content: newCommentText
+      });
+      setNewCommentText('');
+      showToast('Thêm nhận xét thành công! 📝');
+      const data = await teacherApi.getComments(selectedStudent.studentId);
+      setComments(data || []);
+    } catch (err) {
+      showToast('Lỗi gửi nhận xét: ' + err.message, 'error');
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleUpdateComment = async (e) => {
+    e.preventDefault();
+    if (!editingCommentText.trim()) return;
+    setIsSubmittingComment(true);
+    try {
+      await teacherApi.updateComment(editingComment.id, editingCommentText);
+      setEditingComment(null);
+      setEditingCommentText('');
+      showToast('Cập nhật nhận xét thành công! 🎉');
+      const data = await teacherApi.getComments(selectedStudent.studentId);
+      setComments(data || []);
+    } catch (err) {
+      showToast('Lỗi cập nhật: ' + err.message, 'error');
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa nhận xét này không?')) return;
+    try {
+      await teacherApi.deleteComment(commentId);
+      showToast('Đã xóa nhận xét thành công! 🗑️');
+      const data = await teacherApi.getComments(selectedStudent.studentId);
+      setComments(data || []);
+    } catch (err) {
+      showToast('Lỗi xóa nhận xét: ' + err.message, 'error');
+    }
   };
 
   const getStatusBadge = (accuracy) => {
@@ -133,6 +210,7 @@ const TeacherDashboard = () => {
                 <th>Chuỗi ngày</th>
                 <th>Chủ đề yếu</th>
                 <th>Đánh giá</th>
+                <th style={{ width: '120px', textAlign: 'right', paddingRight: '16px' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -153,11 +231,16 @@ const TeacherDashboard = () => {
                   <td>🔥 {s.practiceFrequencyDays} buổi/tuần</td>
                   <td style={{ color: 'var(--gray-400)' }}>{s.weakTopics?.join(', ') || 'Không có'}</td>
                   <td>{getStatusBadge(s.accuracyPercent)}</td>
+                  <td style={{ textAlign: 'right', paddingRight: '16px' }}>
+                    <button className="btn btn-blue btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 10px', fontSize: '12px' }} onClick={() => handleOpenComments(s)}>
+                      <MessageSquare size={13} /> Nhận xét
+                    </button>
+                  </td>
                 </tr>
               ))}
               {students.length === 0 && (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '32px', color: 'var(--gray-400)' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '32px', color: 'var(--gray-400)' }}>
                     Chưa có dữ liệu theo dõi tiến trình
                   </td>
                 </tr>
@@ -180,6 +263,109 @@ const TeacherDashboard = () => {
         </div>
         <button className="btn btn-blue btn-sm"><Download size={16} /> Export PDF</button>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 10000,
+          padding: '16px 24px', borderRadius: '12px', 
+          background: toast.type === 'success' ? 'linear-gradient(135deg, #6ee7b7, #34d399)' : 'linear-gradient(135deg, #fca5a5, #f87171)',
+          color: '#fff', fontWeight: 700, boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+          display: 'flex', alignItems: 'center', gap: '10px'
+        }}>
+          {toast.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+          {toast.message}
+        </div>
+      )}
+
+      {/* Student Details & Comments Modal */}
+      {selectedStudent && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '580px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 32px 64px rgba(0,0,0,0.2)', background: '#fff' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--gray-100)', paddingBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0 }}>Chi tiết học viên & Nhận xét</h3>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--gray-400)' }}>
+                  Học viên: <strong>{selectedStudent.fullName}</strong> • Accuracy: {selectedStudent.accuracyPercent?.toFixed(1)}%
+                </p>
+              </div>
+              <button onClick={() => setSelectedStudent(null)} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+            </div>
+
+            {/* Content Body */}
+            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px', paddingRight: '8px' }}>
+              <div style={{ marginBottom: '20px', padding: '16px', background: 'var(--gray-50)', borderRadius: '12px' }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Chỉ số luyện tập</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
+                  <div>🔥 Chuỗi ngày: <strong>{selectedStudent.practiceFrequencyDays} buổi/tuần</strong></div>
+                  <div>🎯 Chủ đề yếu: <strong style={{ color: 'var(--orange)' }}>{selectedStudent.weakTopics?.join(', ') || 'Không có'}</strong></div>
+                </div>
+              </div>
+
+              <h4 style={{ marginBottom: '12px', fontSize: '15px' }}>Nhật ký nhận xét ({comments.length})</h4>
+              
+              {loadingComments ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}><Loader2 className="spinning" size={24} /></div>
+              ) : comments.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--gray-300)', fontSize: '14px' }}>
+                  <MessageSquare size={32} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                  <p>Chưa có nhận xét nào cho học viên này.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {comments.map(c => (
+                    <div key={c.id} style={{ padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--gray-100)', background: '#fff' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontWeight: 800, fontSize: '13px', color: 'var(--primary)' }}>{c.teacherName || 'Giáo viên'}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--gray-300)' }}>
+                          {c.createdAt ? new Date(c.createdAt).toLocaleString('vi-VN') : ''}
+                        </span>
+                      </div>
+                      
+                      {editingComment && editingComment.id === c.id ? (
+                        <form onSubmit={handleUpdateComment} style={{ marginTop: '8px' }}>
+                          <textarea className="form-input" style={{ width: '100%', minHeight: '60px', marginBottom: '8px', fontSize: '13px' }} required
+                            value={editingCommentText} onChange={e => setEditingCommentText(e.target.value)} />
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button type="button" className="btn btn-white btn-xs" onClick={() => setEditingComment(null)}>Hủy</button>
+                            <button type="submit" className="btn btn-primary btn-xs" disabled={isSubmittingComment}>Lưu</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <div style={{ fontSize: '14px', color: 'var(--text-dark)', lineHeight: '1.4', whiteSpace: 'pre-line' }}>{c.content}</div>
+                          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px', borderTop: '1px solid #f9f9f9', paddingTop: '4px' }}>
+                            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '2px' }} 
+                              onClick={() => { setEditingComment(c); setEditingCommentText(c.content); }}>
+                              <Edit size={12} /> Sửa
+                            </button>
+                            <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', opacity: 0.8, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '2px' }} 
+                              onClick={() => handleDeleteComment(c.id)}>
+                              <Trash2 size={12} /> Xóa
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add Comment Form */}
+            <form onSubmit={handleAddComment} style={{ borderTop: '1px solid var(--gray-100)', paddingTop: '16px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input type="text" className="form-input" placeholder="Viết nhận xét, đánh giá tiến độ học tập..." required style={{ margin: 0, fontSize: '13px' }}
+                  value={newCommentText} onChange={e => setNewCommentText(e.target.value)} />
+                <button type="submit" className="btn btn-primary btn-sm" disabled={isSubmittingComment || !newCommentText.trim()}>
+                  {isSubmittingComment ? <Loader2 className="spinning" size={14} /> : <Plus size={14} />} Gửi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 };
