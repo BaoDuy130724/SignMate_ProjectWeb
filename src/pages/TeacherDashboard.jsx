@@ -27,15 +27,15 @@ const TeacherDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const classesData = await teacherApi.getClasses();
-        setClasses(classesData || []);
-        
+        const classesData = await teacherApi.getClasses() || [];
+        setClasses(classesData);
+
         if (classesData.length > 0) {
           const firstClass = classesData[0];
           setActiveClass(firstClass);
-          
+
           const trackingData = await progressApi.getClassProgress(firstClass.id);
-          setStudents(trackingData);
+          setStudents(trackingData || []);
         }
       } catch (err) {
         setError(err.message || 'Lỗi lấy dữ liệu');
