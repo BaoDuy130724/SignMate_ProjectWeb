@@ -68,7 +68,9 @@ const loadGlobalStats = async (setStats, setLoading) => {
       setStats({
         totalUsers: dash.totalUsers ?? 0,
         totalCenters: dash.activeCenters ?? safeCenters.length,
-        b2bUsers: (dash.totalUsers ?? 0) - (dash.b2cUsers ?? 0),
+        // BE trả sẵn b2bUsers (chỉ đếm student B2B); tự suy totalUsers - b2cUsers
+        // sẽ tính nhầm cả admin/teacher vào B2B.
+        b2bUsers: dash.b2bUsers ?? 0,
         b2cUsers: dash.b2cUsers ?? 0,
         premiumUsers: dash.premiumUsers ?? 0,
         basicUsers: dash.basicUsers ?? 0,
@@ -87,14 +89,15 @@ const loadGlobalStats = async (setStats, setLoading) => {
     ]);
     const safeUsers = Array.isArray(users) ? users : [];
     const safeSubs = Array.isArray(subs) ? subs : [];
-    const b2bCount = safeUsers.filter(u => u?.centerId).length;
+    const students = safeUsers.filter(u => u?.role === 'Student');
+    const b2bCount = students.filter(u => u?.centerId).length;
     const revenue = safeSubs.reduce((acc, s) => acc + (s.priceVnd || 0), 0);
     setStats(prev => ({
       ...prev,
       totalUsers: safeUsers.length,
       totalCenters: safeCenters.length,
       b2bUsers: b2bCount,
-      b2cUsers: safeUsers.length - b2bCount,
+      b2cUsers: students.length - b2bCount,
       revenue,
     }));
   } catch (err) {
