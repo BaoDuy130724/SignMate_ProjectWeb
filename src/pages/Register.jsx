@@ -57,6 +57,7 @@ const RegisterPage = ({ setRole }) => {
 
       // Auto login after successful registration
       localStorage.setItem('accessToken', res.accessToken);
+      if (res.refreshToken) localStorage.setItem('refreshToken', res.refreshToken);
       
       const user = await authApi.me();
       const role = user.role || 'Student';

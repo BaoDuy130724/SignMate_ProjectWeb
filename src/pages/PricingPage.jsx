@@ -85,6 +85,8 @@ const PricingPage = () => {
       const res = await subscriptionApi.upgrade(planId, returnUrl);
       
       if (res.paymentUrl) {
+        // PaymentCallback dùng id này để đối chiếu gói được kích hoạt với server
+        localStorage.setItem('pendingPlanId', String(planId));
         window.location.href = res.paymentUrl;
       } else if (res.success) {
         alert('Gói miễn phí đã được kích hoạt!');

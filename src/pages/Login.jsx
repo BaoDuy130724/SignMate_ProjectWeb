@@ -19,6 +19,7 @@ const LoginPage = ({ setRole }) => {
     try {
       const res = await authApi.login(email, password);
       localStorage.setItem('accessToken', res.accessToken);
+      if (res.refreshToken) localStorage.setItem('refreshToken', res.refreshToken);
 
       // Get user info to determine role
       const user = await authApi.me();

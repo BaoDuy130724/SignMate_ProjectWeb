@@ -21,6 +21,41 @@ const headers = (isJson = true) => {
   return h;
 };
 
+// Helper: single-flight token refresh.
+// Nhiều request 401 đồng thời chia sẻ chung MỘT lần gọi /auth/refresh —
+// tránh đua nhau dùng refresh token cũ đã bị xoay → fail → bị đá về /login oan.
+let refreshInFlight = null;
+
+const tryRefreshToken = () => {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return false;
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!res.ok) return false;
+      const body = await res.json();
+      // Unpack ApiResponse<T> envelope if present
+      const data = body && typeof body === 'object' && 'data' in body ? body.data : body;
+      if (!data || !data.accessToken) return false;
+      localStorage.setItem('accessToken', data.accessToken);
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+      return true;
+    } catch {
+      return false;
+    }
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
+};
+
 // Helper: handle response
 const handleResponse = async (res) => {
   if (res.status === 401) {
@@ -28,6 +63,7 @@ const handleResponse = async (res) => {
     const isLoginPage = window.location.pathname === '/login';
     if (!isLoginPage) {
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('userRole');
       window.location.href = '/login';
     }
@@ -41,7 +77,7 @@ const handleResponse = async (res) => {
           errMsg = body.message;
         }
       }
-    } catch (e) {
+    } catch {
       // Ignore JSON parse or text read error, use fallback message
     }
     throw new Error(errMsg);
@@ -65,7 +101,7 @@ const handleResponse = async (res) => {
           errMsg = text;
         }
       }
-    } catch (e) {
+    } catch {
       // Ignore parse/read error, use fallback HTTP status
     }
     throw new Error(errMsg);
@@ -77,7 +113,7 @@ const handleResponse = async (res) => {
   let body;
   try {
     body = JSON.parse(text);
-  } catch (e) {
+  } catch {
     return text; // Fallback to raw text if not JSON
   }
 
@@ -93,37 +129,42 @@ const handleResponse = async (res) => {
   return body;
 };
 
+// Core request: gọi API, nếu access token hết hạn (401) thì refresh rồi thử lại MỘT lần.
+// Không refresh cho /auth/* (tránh vòng lặp khi chính refresh/login bị 401).
+const request = async (path, { method = 'GET', body, isJson = true } = {}) => {
+  const doFetch = () =>
+    fetch(`${API_BASE}${path}`, { method, headers: headers(isJson), body });
+
+  let res = await doFetch();
+
+  if (res.status === 401 && !path.startsWith('/auth/')) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) res = await doFetch();
+  }
+
+  return handleResponse(res);
+};
+
 // Small helpers to cut boilerplate
-const get = (path) =>
-  fetch(`${API_BASE}${path}`, { headers: headers() }).then(handleResponse);
+const get = (path) => request(path);
 
 const post = (path, data) =>
-  fetch(`${API_BASE}${path}`, {
+  request(path, {
     method: 'POST',
-    headers: headers(),
     body: data === undefined ? undefined : JSON.stringify(data),
-  }).then(handleResponse);
+  });
 
 const put = (path, data) =>
-  fetch(`${API_BASE}${path}`, {
+  request(path, {
     method: 'PUT',
-    headers: headers(),
     body: data === undefined ? undefined : JSON.stringify(data),
-  }).then(handleResponse);
+  });
 
-const del = (path) =>
-  fetch(`${API_BASE}${path}`, {
-    method: 'DELETE',
-    headers: headers(),
-  }).then(handleResponse);
+const del = (path) => request(path, { method: 'DELETE' });
 
 // multipart/form-data upload (file + extra fields), no JSON Content-Type header
 const upload = (path, formData) =>
-  fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: headers(false),
-    body: formData,
-  }).then(handleResponse);
+  request(path, { method: 'POST', body: formData, isJson: false });
 
 // ============================
 // AUTH  (api/auth)

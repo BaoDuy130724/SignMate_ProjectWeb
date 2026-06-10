@@ -1,7 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from 'lucide-react';
-import { API_BASE } from '../services/api';
+import { subscriptionApi } from '../services/api';
+
+// Đọc kết quả từ query string của cổng thanh toán — chỉ dùng làm "gợi ý" nhanh
+// để báo thất bại sớm; thành công PHẢI được xác nhận lại với server.
+// Hỗ trợ cả VNPay (vnp_ResponseCode) lẫn PayOS (code/status/cancel) cho tương lai.
+const readGatewayHint = (params) => {
+  const vnpCode = params.get('vnp_ResponseCode');
+  if (vnpCode !== null) return vnpCode === '00' ? 'success' : 'failed';
+  if (params.get('cancel') === 'true') return 'failed';
+  const payosCode = params.get('code');
+  if (payosCode !== null) return payosCode === '00' ? 'success' : 'failed';
+  const payosStatus = params.get('status');
+  if (payosStatus !== null) return payosStatus === 'PAID' ? 'success' : 'failed';
+  return 'unknown';
+};
 
 const PaymentCallback = () => {
   const navigate = useNavigate();
@@ -10,45 +24,69 @@ const PaymentCallback = () => {
   const [message, setMessage] = useState('Đang xử lý kết quả thanh toán...');
 
   useEffect(() => {
+    let cancelled = false;
+
+    // Nguồn sự thật là server: gói chỉ được kích hoạt qua IPN/webhook của cổng
+    // thanh toán. Poll /subscription/me một lúc để chờ IPN về.
+    const confirmWithServer = async () => {
+      const pendingPlanId = Number(localStorage.getItem('pendingPlanId')) || null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (cancelled) return false;
+        try {
+          const sub = await subscriptionApi.getMyPlan(); // 404 khi chưa có gói active
+          if (sub && sub.isActive && (!pendingPlanId || sub.planId === pendingPlanId)) {
+            return true;
+          }
+        } catch {
+          // 404 / lỗi mạng: chưa ghi nhận — chờ rồi thử lại
+        }
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+      return false;
+    };
+
     const processPayment = async () => {
-      // Get the full query string returned by VNPay
-      const queryString = location.search;
-      
-      if (!queryString) {
+      const params = new URLSearchParams(location.search);
+
+      if (!location.search) {
         setStatus('error');
         setMessage('Không tìm thấy thông tin thanh toán.');
         return;
       }
 
-      try {
-        // Send the VNPay callback data to our backend to validate and update the database
-        const res = await fetch(`${API_BASE}/subscription/vnpay-return${queryString}`, {
-          method: 'GET',
-        });
-
-        if (res.ok) {
-          // The backend HTML page will be returned if successful, meaning DB is updated
-          setStatus('success');
-          setMessage('Thanh toán thành công! Gói cước của bạn đã được kích hoạt.');
-          
-          // Auto redirect to dashboard after 3 seconds
-          setTimeout(() => {
-            const role = localStorage.getItem('userRole');
-            if (role === 'Student') navigate('/student');
-            else if (role === 'CenterAdmin') navigate('/center');
-            else navigate('/');
-          }, 3000);
-        } else {
-          setStatus('error');
-          setMessage('Thanh toán thất bại hoặc chữ ký không hợp lệ.');
-        }
-      } catch (err) {
+      const hint = readGatewayHint(params);
+      if (hint === 'failed') {
         setStatus('error');
-        setMessage('Lỗi kết nối máy chủ khi xác nhận thanh toán.');
+        setMessage('Thanh toán đã bị hủy hoặc không thành công. Bạn chưa bị trừ tiền cho gói này.');
+        return;
+      }
+
+      setMessage('Đang xác nhận giao dịch với máy chủ...');
+      const confirmed = await confirmWithServer();
+      if (cancelled) return;
+
+      if (confirmed) {
+        localStorage.removeItem('pendingPlanId');
+        setStatus('success');
+        setMessage('Thanh toán thành công! Gói cước của bạn đã được kích hoạt.');
+
+        // Auto redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          const role = localStorage.getItem('userRole');
+          if (role === 'Student') navigate('/student');
+          else if (role === 'CenterAdmin') navigate('/center');
+          else navigate('/');
+        }, 3000);
+      } else {
+        setStatus('error');
+        setMessage('Chưa ghi nhận được thanh toán cho gói của bạn. Nếu bạn đã bị trừ tiền, hệ thống sẽ tự xác nhận trong ít phút — hãy kiểm tra lại ở trang gói cước.');
       }
     };
 
     processPayment();
+    return () => {
+      cancelled = true;
+    };
   }, [location.search, navigate]);
 
   return (
