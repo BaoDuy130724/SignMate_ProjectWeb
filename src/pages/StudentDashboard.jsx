@@ -4,7 +4,7 @@ import {
   Map, Calendar, ArrowRight, Zap, CheckCircle2, Loader2, 
   TrendingUp, Award, PlayCircle, Star, QrCode, Crown, Sparkles
 } from 'lucide-react';
-import { dashboardApi, subscriptionApi, authApi } from '../services/api';
+import { dashboardApi, subscriptionApi, authApi, enrollmentsApi } from '../services/api';
 
 const StudentDashboard = () => {
   const [stats, setStats] = useState({
@@ -13,8 +13,7 @@ const StudentDashboard = () => {
     accuracy: 0,
     lessonsCompleted: 0,
     totalLessons: 0,
-    points: 0,
-    level: 1,
+    signsMastered: 0,
     recentSessions: [],
     deadlines: []
   });
@@ -24,21 +23,26 @@ const StudentDashboard = () => {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [overviewData, userData] = await Promise.all([
+      // /users/me (UserProfileDto) KHÔNG có streak/accuracy/lessons — các số đó
+      // nằm ở /dashboard, /dashboard/progress và /enrollments/me.
+      const [overviewData, progressData, enrollmentsData, userData] = await Promise.all([
         dashboardApi.getOverview().catch(() => null),
+        dashboardApi.getProgressStats().catch(() => null),
+        enrollmentsApi.getMine().catch(() => []),
         authApi.me().catch(() => null)
       ]);
 
-      if (overviewData || userData) {
+      if (overviewData || progressData || userData) {
+        const enrollments = Array.isArray(enrollmentsData) ? enrollmentsData : [];
         setStats(prev => ({
-          streak: userData ? userData.streak : (overviewData?.streak || overviewData?.currentStreak || 0),
-          accuracy: userData ? userData.practiceAccuracy : (overviewData?.accuracy || overviewData?.averageAccuracy || 0),
-          lessonsCompleted: userData ? userData.lessonsCompleted : (overviewData?.lessonsCompleted || 0),
-          totalLessons: overviewData?.totalLessons || 10,
-          points: userData ? userData.totalXp : (overviewData?.points || 0),
-          level: userData ? userData.level : 1,
+          streak: overviewData?.currentStreak || 0,
+          accuracy: Math.round(overviewData?.averageAccuracy || 0),
+          // Lộ trình = tổng bài của các khóa đã ghi danh
+          lessonsCompleted: enrollments.reduce((sum, e) => sum + (e.completedLessons || 0), 0),
+          totalLessons: enrollments.reduce((sum, e) => sum + (e.totalLessons || 0), 0),
+          signsMastered: progressData?.totalSignsMastered || 0,
           recentSessions: overviewData?.recentSessions || [],
-          deadlines: overviewData?.deadlines || overviewData?.assignments || [],
+          deadlines: overviewData?.deadlines || [],
           fullName: userData?.fullName || prev.fullName
         }));
       }
@@ -200,8 +204,8 @@ const StudentDashboard = () => {
                <Award size={30} />
             </div>
             <div>
-               <div style={{ fontSize: '14px', fontWeight: 700, opacity: 0.8 }}>LEVEL</div>
-               <div style={{ fontSize: '28px', fontWeight: 900 }}>Cấp độ {stats?.level || 1}</div>
+               <div style={{ fontSize: '14px', fontWeight: 700, opacity: 0.8 }}>ĐÃ THUỘC</div>
+               <div style={{ fontSize: '28px', fontWeight: 900 }}>{stats?.signsMastered || 0} ký hiệu</div>
             </div>
          </div>
       </div>
