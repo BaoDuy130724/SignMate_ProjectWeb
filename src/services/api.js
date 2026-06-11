@@ -406,7 +406,8 @@ export const progressApi = {
 // ============================
 export const trackingApi = {
   getClassStudents: (classId) => get(`/tracking/classes/${classId}/students`),
-  getCenterReports: (centerId) => get(`/tracking/centers/${centerId}/reports`),
+  getCenterReports: (centerId, from, to) => 
+    get(`/tracking/centers/${centerId}/reports?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
 };
 
 // ============================
@@ -440,6 +441,12 @@ export const subscriptionApi = {
     post('/subscription/subscribe', { planId, returnUrl }),
 
   getAll: () => get('/subscription/all'),
+
+  createPlan: (data) => post('/plans', data),
+
+  updatePlan: (id, data) => put(`/plans/${id}`, data),
+
+  deletePlan: (id) => del(`/plans/${id}`),
 };
 
 // ============================

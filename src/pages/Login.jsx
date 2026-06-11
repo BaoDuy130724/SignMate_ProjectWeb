@@ -109,8 +109,13 @@ const LoginPage = ({ setRole }) => {
           <div className="form-group" style={{ textAlign: 'left' }}>
             <label className="form-label">Mật khẩu</label>
             <input type="password" className="form-input" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <div style={{ marginTop: '8px', textAlign: 'right', fontSize: '13px' }}>
+              <Link to="/forgot-password" style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+                Quên mật khẩu?
+              </Link>
+            </div>
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }} disabled={loading}>
             <LogIn size={18} /> {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>

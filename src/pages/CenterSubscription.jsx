@@ -5,6 +5,7 @@ import { centersApi, subscriptionApi } from '../services/api';
 const CenterSubscription = () => {
   const [subscription, setSubscription] = useState(null);
   const [stats, setStats] = useState(null);
+  const [b2bPlan, setB2bPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -13,12 +14,14 @@ const CenterSubscription = () => {
   const loadData = useCallback(async () => {
     try {
       if (!centerId) throw new Error('Không tìm thấy thông tin trung tâm.');
-      const [subData, dashboardData] = await Promise.all([
+      const [subData, dashboardData, plansData] = await Promise.all([
         subscriptionApi.getMyPlan(),
-        centersApi.getDashboard(centerId)
+        centersApi.getDashboard(centerId),
+        subscriptionApi.getPlans()
       ]);
       setSubscription(subData);
       setStats(dashboardData);
+      setB2bPlan((plansData || []).find(p => p.type === 'B2B') || null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -30,14 +33,25 @@ const CenterSubscription = () => {
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}><Loader2 className="spinning" /></div>;
 
-  const features = [
-    "Quản lý sĩ số lớp học linh hoạt",
-    "Báo cáo tiến độ học viên chuyên sâu",
-    "Thanh toán một lần theo năm",
-    "Hỗ trợ kỹ thuật 24/7",
-    "API kết nối hệ thống CRM",
-    "Xuất báo cáo PDF/Excel không giới hạn"
+  if (error) return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '24px', color: 'var(--red, #dc2626)' }}>
+      <AlertCircle size={20} /> {error}
+    </div>
+  );
+
+  // Giá và tính năng lấy theo gói B2B trong hệ thống; fallback khớp dữ liệu seed.
+  const seatPrice = b2bPlan?.priceVnd ?? 79000;
+  let features = [
+    "Trang quản trị cho giáo viên",
+    "Quản lý danh sách lớp học",
+    "Theo dõi tiến độ học viên",
+    "Báo cáo kết quả học tập",
+    "Yêu cầu tối thiểu 20 học viên"
   ];
+  try {
+    const parsed = JSON.parse(b2bPlan?.featuresJson || 'null');
+    if (Array.isArray(parsed) && parsed.length > 0) features = parsed;
+  } catch { /* giữ fallback */ }
 
   return (
     <>
@@ -47,7 +61,7 @@ const CenterSubscription = () => {
           <p className="page-subtitle">Quản lý các giới hạn, thời hạn và tính năng của gói dịch vụ B2B</p>
         </div>
         <div className="badge badge-purple" style={{ padding: '8px 16px', fontSize: '14px', fontWeight: 800 }}>
-          {subscription?.planName || 'Enterprise Plan'}
+          {subscription?.planName || b2bPlan?.name || 'Gói Trung tâm (B2B)'}
         </div>
       </div>
 
@@ -72,7 +86,7 @@ const CenterSubscription = () => {
                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Calendar size={20} color="var(--gray-400)" />
                   <span style={{ fontWeight: 800, fontSize: '18px' }}>
-                    {subscription?.expiryDate ? new Date(subscription.expiryDate).toLocaleDateString('vi-VN') : '—'}
+                    {subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('vi-VN') : '—'}
                   </span>
                 </div>
               </div>
@@ -117,22 +131,22 @@ const CenterSubscription = () => {
         <div>
            <div className="card" style={{ background: 'var(--text-dark)', color: '#fff', border: 'none', position: 'relative', overflow: 'hidden', padding: '32px' }}>
               <Star size={80} style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1, transform: 'rotate(15deg)' }} />
-              <div className="badge badge-yellow" style={{ position: 'relative', marginBottom: '16px' }}>ĐỀ XUẤT</div>
-              <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>Unlimited <br/> Education</h2>
-              <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '24px' }}>Mở rộng quy mô không giới hạn học viên và tính năng AI feedback nâng cao.</p>
-              
+              <div className="badge badge-yellow" style={{ position: 'relative', marginBottom: '16px' }}>GÓI B2B</div>
+              <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{b2bPlan?.name || 'Gói Trung tâm (B2B)'}</h2>
+              <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '24px' }}>Tính phí theo từng học viên, linh hoạt mở rộng quy mô lớp học của trung tâm.</p>
+
               <div style={{ fontSize: '32px', fontWeight: 800, marginBottom: '32px' }}>
-                9.500.000 <span style={{ fontSize: '15px', fontWeight: 600, opacity: 0.6 }}>/ năm</span>
+                {seatPrice.toLocaleString('vi-VN')}đ <span style={{ fontSize: '15px', fontWeight: 600, opacity: 0.6 }}>/ học viên / tháng</span>
               </div>
-              
+
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                 <li style={{ display: 'flex', gap: '10px' }}><CheckCircle2 size={16} color="var(--yellow)" /> Không giới hạn sĩ số</li>
-                 <li style={{ display: 'flex', gap: '10px' }}><CheckCircle2 size={16} color="var(--yellow)" /> Ưu tiên update module AI</li>
-                 <li style={{ display: 'flex', gap: '10px' }}><CheckCircle2 size={16} color="var(--yellow)" /> Support Support VIP</li>
+                 {features.slice(0, 3).map((f, i) => (
+                   <li key={i} style={{ display: 'flex', gap: '10px' }}><CheckCircle2 size={16} color="var(--yellow)" /> {f}</li>
+                 ))}
               </ul>
-              
+
               <button className="btn btn-primary" style={{ width: '100%', background: 'var(--yellow)', color: 'var(--text-dark)', fontWeight: 800, border: 'none' }}>
-                Nâng cấp Gói ngay <ArrowUpRight size={18} />
+                Mua thêm seats <ArrowUpRight size={18} />
               </button>
            </div>
 
@@ -140,7 +154,7 @@ const CenterSubscription = () => {
               <div style={{ color: 'var(--primary)' }}><Zap size={24} /></div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '15px' }}>Cần thêm lượt seats?</div>
-                <div style={{ fontSize: '13px', color: 'var(--gray-400)' }}>Bạn có thể mua lẻ thêm $48k/seat/năm mà không cần nâng cấp gói.</div>
+                <div style={{ fontSize: '13px', color: 'var(--gray-400)' }}>Bạn có thể mua lẻ thêm seat với {seatPrice.toLocaleString('vi-VN')}đ/học viên/tháng mà không cần nâng cấp gói.</div>
               </div>
            </div>
         </div>

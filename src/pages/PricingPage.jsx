@@ -25,20 +25,20 @@ const PricingPage = () => {
         } else {
           setPlans([
             {
-              id: 'sample-free', name: 'Free Student', priceVnd: 0, durationDays: 30, type: 'Free',
-              featuresJson: '["5 bài học / ngày", "AI Feedback cơ bản", "Theo dõi tiến độ"]'
+              id: 'sample-free', name: 'Gói Miễn phí', priceVnd: 0, durationDays: 30, type: 'Free',
+              featuresJson: '["5 bài học mỗi ngày", "Phản hồi đúng sai cơ bản", "Không phân tích thống kê", "Không sửa lỗi chi tiết"]'
             },
             {
               id: 'sample-basic', name: 'Gói Cơ bản', priceVnd: 49000, durationDays: 30, type: 'Basic',
-              featuresJson: '["Bài học không giới hạn", "Phản hồi lỗi cơ bản", "Theo dõi tiến độ", "Streak"]'
+              featuresJson: '["Bài học không giới hạn", "Phản hồi lỗi cơ bản", "Theo dõi tiến độ học tập", "Duy trì chuỗi ngày học (Streak)"]'
             },
             {
               id: 'sample-pro', name: 'Gói Nâng cao (Pro)', priceVnd: 99000, durationDays: 30, type: 'Pro',
-              featuresJson: '["AI sửa lỗi chi tiết", "Phân tích chuyên sâu", "Hỗ trợ 24/7", "Lộ trình cá nhân hóa"]'
+              featuresJson: '["AI sửa lỗi chi tiết", "Phân tích góc độ, hình dáng tay", "Phát hiện điểm yếu cần cải thiện", "Phân tích chuyên sâu (Advanced analytics)"]'
             },
             {
-              id: 'sample-b2b', name: 'Center Standard', priceVnd: 5000000, durationDays: 365, type: 'B2B',
-              featuresJson: '["Quản lý 50 học viên", "Dashboard trung tâm", "Báo cáo tiến độ chi tiết"]'
+              id: 'sample-b2b', name: 'Gói Trung tâm (B2B)', priceVnd: 79000, durationDays: 30, type: 'B2B',
+              featuresJson: '["Trang quản trị cho giáo viên", "Quản lý danh sách lớp học", "Theo dõi tiến độ học viên", "Báo cáo kết quả học tập", "Yêu cầu tối thiểu 20 học viên"]'
             }
           ]);
         }
@@ -154,7 +154,7 @@ const PricingPage = () => {
                   {plan.priceVnd > 100000 && <div className="pricing-badge">Khuyên dùng</div>}
                   <div className="pricing-name">{plan.name}</div>
                   <div className="pricing-price">
-                    {plan.priceVnd === 0 ? '0đ' : `${(plan.priceVnd / 1000).toLocaleString()}k`}
+                    {plan.priceVnd === 0 ? '0đ' : `${Number(plan.priceVnd).toLocaleString('vi-VN')}đ`}
                     <span>/{plan.durationDays} ngày</span>
                   </div>
                   
@@ -189,7 +189,7 @@ const PricingPage = () => {
                        <div>
                           <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--blue-dark)' }}>{plan.name}</div>
                           <div style={{ fontSize: '28px', fontWeight: 900, marginTop: '8px' }}>
-                             {(plan.priceVnd / 1000).toLocaleString()}k <span style={{ fontSize: '14px', color: 'var(--gray-300)' }}>/tháng</span>
+                             {Number(plan.priceVnd).toLocaleString('vi-VN')}đ <span style={{ fontSize: '14px', color: 'var(--gray-300)' }}>/ học viên / tháng</span>
                           </div>
                        </div>
                        <div style={{ padding: '8px 12px', background: 'var(--blue-light)', color: 'var(--blue-dark)', borderRadius: '8px', fontSize: '12px', fontWeight: 800 }}>B2B PARTNER</div>

@@ -70,9 +70,9 @@ const RevenueManagement = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
-        <StatPanel title="Tổng Doanh Thu" value={`${(totalRevenue / 1000000).toFixed(1)}M VNĐ`} icon={Landmark} trend="up" trendValue="+12.5%" color="var(--primary)" />
-        <StatPanel title="Doanh thu B2B" value={`${(b2bRevenue / 1000000).toFixed(1)}M VNĐ`} icon={Layers} trend="up" trendValue="+8.2%" color="var(--purple)" />
-        <StatPanel title="Doanh thu B2C" value={`${(b2cRevenue / 1000).toFixed(0)}k VNĐ`} icon={Users} trend="down" trendValue="-3.1%" color="var(--blue)" />
+        <StatPanel title="Tổng Doanh Thu" value={`${totalRevenue.toLocaleString('vi-VN')}đ`} icon={Landmark} trend="up" trendValue="+12.5%" color="var(--primary)" />
+        <StatPanel title="Doanh thu B2B" value={`${b2bRevenue.toLocaleString('vi-VN')}đ`} icon={Layers} trend="up" trendValue="+8.2%" color="var(--purple)" />
+        <StatPanel title="Doanh thu B2C" value={`${b2cRevenue.toLocaleString('vi-VN')}đ`} icon={Users} trend="down" trendValue="-3.1%" color="var(--blue)" />
         <StatPanel title="Tỷ suất Lợi nhuận" value="68.2%" icon={TrendingUp} trend="up" trendValue="+2.4%" color="var(--green)" />
       </div>
 

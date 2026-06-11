@@ -28,6 +28,7 @@ const Sidebar = ({ role }) => {
                 { to: '/admin/users', icon: <Users size={20} />, label: 'User Management' },
                 { to: '/admin/b2b', icon: <Building2 size={20} />, label: 'B2B Management' },
                 { to: '/admin/subscriptions', icon: <CreditCard size={20} />, label: 'Subscriptions' },
+                { to: '/admin/plans', icon: <Settings size={20} />, label: 'Plans Config' },
                 { to: '/admin/content', icon: <BookOpen size={20} />, label: 'Content' },
               ]
             },
@@ -56,7 +57,9 @@ const Sidebar = ({ role }) => {
               links: [
                 { to: '/center/classes', icon: <GraduationCap size={20} />, label: 'Lớp học' },
                 { to: '/center/students', icon: <UserPlus size={20} />, label: 'Học viên' },
+                { to: '/center/teachers', icon: <Users size={20} />, label: 'Giáo viên' },
                 { to: '/center/subscription', icon: <CreditCard size={20} />, label: 'Gói dịch vụ' },
+                { to: '/center/reports', icon: <FileText size={20} />, label: 'Báo cáo' },
               ]
             },
           ]
@@ -78,6 +81,7 @@ const Sidebar = ({ role }) => {
                 { to: '/teacher/assign', icon: <ClipboardList size={20} />, label: 'Giao bài' },
                 { to: '/teacher/progress', icon: <BarChart3 size={20} />, label: 'Tiến độ học viên' },
                 { to: '/teacher/reports', icon: <FileText size={20} />, label: 'Báo cáo' },
+                { to: '/teacher/vocabulary', icon: <BookOpen size={20} />, label: 'Dữ liệu AI' },
               ]
             },
           ]

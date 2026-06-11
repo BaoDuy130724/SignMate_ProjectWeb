@@ -181,7 +181,7 @@ const AnalyticsManagement = () => {
               <div style={{ color: 'var(--gray-500)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={16} /> User Acquisition Cost (UAC)
               </div>
-              <div style={{ fontWeight: 800, fontSize: '18px' }}>48.000 VNĐ / user</div>
+              <div style={{ fontWeight: 800, fontSize: '18px' }}>48.000đ / user</div>
               <div style={{ fontSize: '12px', color: 'var(--green)', fontWeight: 700, marginTop: '4px' }}>↓ Giảm 12% so với quý trước</div>
             </div>
           </div>

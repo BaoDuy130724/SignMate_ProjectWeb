@@ -54,14 +54,14 @@ const SubscriptionManagement = () => {
       <div className="stat-grid" style={{ marginBottom: '32px' }}>
         <div className="stat-card" style={{ borderLeft: '4px solid var(--green)' }}>
           <div className="stat-label">Tổng doanh thu (Lifetime)</div>
-          <div className="stat-value">{stats.totalRevenue.toLocaleString()} VNĐ</div>
+          <div className="stat-value">{stats.totalRevenue.toLocaleString('vi-VN')}đ</div>
           <div style={{ fontSize: '12px', color: 'var(--gray-400)', marginTop: '8px' }}>
             Tổng tích lũy từ trước đến nay
           </div>
         </div>
         <div className="stat-card" style={{ borderLeft: '4px solid var(--blue)' }}>
           <div className="stat-label">Doanh thu định kỳ (MRR)</div>
-          <div className="stat-value">{stats.mrr.toLocaleString()} VNĐ</div>
+          <div className="stat-value">{stats.mrr.toLocaleString('vi-VN')}đ</div>
           <div style={{ fontSize: '12px', color: 'var(--gray-400)', marginTop: '8px' }}>Dựa trên {stats.activeSubs} thuê bao active</div>
         </div>
         <div className="stat-card" style={{ borderLeft: '4px solid var(--purple)' }}>
@@ -128,7 +128,7 @@ const SubscriptionManagement = () => {
                 </td>
                 <td><span style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{s.planName}</span></td>
                 <td>
-                  <div style={{ fontWeight: 800 }}>{(s.priceVnd || 0).toLocaleString()} <span style={{ fontSize: '10px', color: 'var(--gray-400)' }}>VNĐ</span></div>
+                  <div style={{ fontWeight: 800 }}>{(s.priceVnd || 0).toLocaleString('vi-VN')}đ</div>
                 </td>
                 <td>
                   <div style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>

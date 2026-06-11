@@ -19,6 +19,7 @@ import AboutPage from './pages/AboutPage';
 // Auth
 import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
+import ForgotPasswordPage from './pages/ForgotPassword';
 import PaymentCallback from './pages/PaymentCallback';
 
 // Dashboard pages (Web 1 & 2)
@@ -26,6 +27,7 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import UserManagement from './pages/UserManagement';
 import B2BManagement from './pages/B2BManagement';
 import SubscriptionManagement from './pages/SubscriptionManagement';
+import PlansManagement from './pages/PlansManagement';
 import ContentManagement from './pages/ContentManagement';
 import AnalyticsManagement from './pages/AnalyticsManagement';
 import RevenueManagement from './pages/RevenueManagement';
@@ -36,10 +38,16 @@ import StudentDashboard from './pages/StudentDashboard';
 import CenterClasses from './pages/CenterClasses';
 import CenterStudents from './pages/CenterStudents';
 import CenterSubscription from './pages/CenterSubscription';
+import CenterTeachers from './pages/CenterTeachers';
+import CenterReports from './pages/CenterReports';
 
 import StudentAssignments from './pages/StudentAssignments';
+import StudentProgress from './pages/StudentProgress';
 import NotificationsPage from './pages/NotificationsPage';
 import TeacherStudentsPage from './pages/TeacherStudentsPage';
+import TeacherAssign from './pages/TeacherAssign';
+import TeacherReports from './pages/TeacherReports';
+import TeacherVocabulary from './pages/TeacherVocabulary';
 
 // Marketing Layout (Navbar + Footer)
 const MarketingLayout = ({ children }) => (
@@ -149,12 +157,13 @@ function App() {
         {/* ===== Login ===== */}
         <Route path="/login" element={<LoginPage setRole={updateRole} />} />
         <Route path="/register" element={<RegisterPage setRole={updateRole} />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/payment-callback" element={<PaymentCallback />} />
 
         {/* ===== STUDENT DASHBOARD ===== */}
         <Route path="/student" element={guard('Student', <StudentDashboard />)} />
         <Route path="/student/assignments" element={guard('Student', <StudentAssignments />)} />
-        <Route path="/student/progress" element={guard('Student', StudentProgressPlaceholder)} />
+        <Route path="/student/progress" element={guard('Student', <StudentProgress />)} />
         <Route path="/student/mobile" element={guard('Student', StudentMobilePlaceholder)} />
 
         {/* ===== WEB 1: Super Admin Dashboard ===== */}
@@ -162,6 +171,7 @@ function App() {
         <Route path="/admin/users" element={guard('SuperAdmin', <UserManagement />)} />
         <Route path="/admin/b2b" element={guard('SuperAdmin', <B2BManagement />)} />
         <Route path="/admin/subscriptions" element={guard('SuperAdmin', <SubscriptionManagement />)} />
+        <Route path="/admin/plans" element={guard('SuperAdmin', <PlansManagement />)} />
         <Route path="/admin/content" element={guard('SuperAdmin', <ContentManagement />)} />
         <Route path="/admin/analytics" element={guard('SuperAdmin', <AnalyticsManagement />)} />
         <Route path="/admin/revenue" element={guard('SuperAdmin', <RevenueManagement />)} />
@@ -171,12 +181,15 @@ function App() {
         <Route path="/center/classes" element={guard('CenterAdmin', <CenterClasses />)} />
         <Route path="/center/students" element={guard('CenterAdmin', <CenterStudents />)} />
         <Route path="/center/subscription" element={guard('CenterAdmin', <CenterSubscription />)} />
+        <Route path="/center/teachers" element={guard('CenterAdmin', <CenterTeachers />)} />
+        <Route path="/center/reports" element={guard('CenterAdmin', <CenterReports />)} />
 
         {/* ===== WEB 2: Teacher Dashboard ===== */}
         <Route path="/teacher" element={guard('Teacher', <TeacherDashboard />)} />
-        <Route path="/teacher/assign" element={guard('Teacher', TeacherAssignPlaceholder)} />
+        <Route path="/teacher/assign" element={guard('Teacher', <TeacherAssign />)} />
         <Route path="/teacher/progress" element={guard('Teacher', <TeacherStudentsPage />)} />
-        <Route path="/teacher/reports" element={guard('Teacher', TeacherReportsPlaceholder)} />
+        <Route path="/teacher/reports" element={guard('Teacher', <TeacherReports />)} />
+        <Route path="/teacher/vocabulary" element={guard('Teacher', <TeacherVocabulary />)} />
 
         {/* ===== Shared: Notifications (any logged-in role) ===== */}
         <Route path="/notifications" element={guard('any', <NotificationsPage />)} />

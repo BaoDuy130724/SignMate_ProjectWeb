@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Target, BookOpen, FileText, Download, Loader2, MessageSquare, Plus, Trash2, Edit, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { progressApi, teacherApi } from '../services/api';
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [activeClass, setActiveClass] = useState(null);
   const [students, setStudents] = useState([]);
@@ -192,7 +194,7 @@ const TeacherDashboard = () => {
         <div className="table-header">
           <div className="table-title">Tiến độ Học viên</div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-primary btn-sm">Giao bài mới</button>
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('/teacher/assign')}>Giao bài mới</button>
             <button className="btn btn-outline btn-sm"><Download size={16} /> Xuất PDF</button>
           </div>
         </div>
