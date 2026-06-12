@@ -15,7 +15,7 @@ const CenterSubscription = () => {
     try {
       if (!centerId) throw new Error('Không tìm thấy thông tin trung tâm.');
       const [subData, dashboardData, plansData] = await Promise.all([
-        subscriptionApi.getMyPlan(),
+        subscriptionApi.getMyPlan().catch(() => null),
         centersApi.getDashboard(centerId),
         subscriptionApi.getPlans()
       ]);
@@ -76,8 +76,15 @@ const CenterSubscription = () => {
               <div>
                 <div style={{ color: 'var(--gray-400)', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>Tình trạng</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--green)' }}></div>
-                  <span style={{ fontWeight: 800, fontSize: '18px' }}>Đang hoạt động</span>
+                  <div style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    borderRadius: '50%', 
+                    background: subscription ? (subscription.isActive ? 'var(--green)' : 'var(--red, #dc2626)') : '#999' 
+                  }}></div>
+                  <span style={{ fontWeight: 800, fontSize: '18px' }}>
+                    {subscription ? (subscription.isActive ? 'Đang hoạt động' : 'Hết hạn') : 'Chưa kích hoạt'}
+                  </span>
                 </div>
               </div>
               
