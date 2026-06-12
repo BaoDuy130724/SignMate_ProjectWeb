@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, AlertCircle, ArrowLeft, Mail, Lock, User, KeyRound, Loader2, CheckCircle2 } from 'lucide-react';
+import { UserPlus, AlertCircle, ArrowLeft, Mail, Lock, User, KeyRound, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../services/api';
 
 const RegisterPage = ({ setRole }) => {
@@ -14,6 +14,8 @@ const RegisterPage = ({ setRole }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   // Step 1: Send OTP to email
   const handleSendOtp = async (e) => {
@@ -177,29 +179,47 @@ const RegisterPage = ({ setRole }) => {
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Lock size={14} /> Mật khẩu
               </label>
+              <div style={{ position: 'relative' }}>
               <input
-                type="password"
+                type={showPw ? 'text' : 'password'}
                 className="form-input"
                 placeholder="Tối thiểu 6 ký tự"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
+                style={{ paddingRight: '44px' }}
               />
+              <button type="button" onClick={() => setShowPw(!showPw)} style={{
+                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)',
+              }}>
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              </div>
             </div>
 
             <div className="form-group" style={{ textAlign: 'left' }}>
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Lock size={14} /> Xác nhận mật khẩu
               </label>
+              <div style={{ position: 'relative' }}>
               <input
-                type="password"
+                type={showConfirmPw ? 'text' : 'password'}
                 className="form-input"
                 placeholder="Nhập lại mật khẩu"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                style={{ paddingRight: '44px' }}
               />
+              <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} style={{
+                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)',
+              }}>
+                {showConfirmPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              </div>
             </div>
 
             <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }} disabled={loading}>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { User, LogOut, Layout } from 'lucide-react';
+import { User, LogOut, Layout, LogIn, UserPlus } from 'lucide-react';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -61,8 +61,12 @@ const Navbar = () => {
             </div>
           ) : (
             <>
-              <Link to="/login" className="btn btn-outline btn-sm">Đăng nhập</Link>
-              <Link to="/register" className="btn btn-primary btn-sm">Đăng ký</Link>
+              <Link to="/login" className="btn btn-outline btn-sm" title="Đăng nhập" style={{ padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <LogIn size={18} />
+              </Link>
+              <Link to="/register" className="btn btn-primary btn-sm" title="Đăng ký" style={{ padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <UserPlus size={18} />
+              </Link>
             </>
           )}
         </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { LogIn, AlertCircle, ArrowLeft } from 'lucide-react';
+import { LogIn, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../services/api';
 
 const LoginPage = ({ setRole }) => {
@@ -10,6 +10,7 @@ const LoginPage = ({ setRole }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   // Login via Backend API
   const handleLogin = async (e) => {
@@ -104,11 +105,19 @@ const LoginPage = ({ setRole }) => {
           )}
           <div className="form-group" style={{ textAlign: 'left' }}>
             <label className="form-label">Email</label>
-            <input type="email" className="form-input" placeholder="admin@signmate.vn" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <input type="email" className="form-input" placeholder="Nhập email của bạn..." value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
           <div className="form-group" style={{ textAlign: 'left' }}>
             <label className="form-label">Mật khẩu</label>
-            <input type="password" className="form-input" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <div style={{ position: 'relative' }}>
+              <input type={showPw ? 'text' : 'password'} className="form-input" placeholder="Nhập mật khẩu của bạn..." value={password} onChange={(e) => setPassword(e.target.value)} required style={{ paddingRight: '44px' }} />
+              <button type="button" onClick={() => setShowPw(!showPw)} style={{
+                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)',
+              }}>
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             <div style={{ marginTop: '8px', textAlign: 'right', fontSize: '13px' }}>
               <Link to="/forgot-password" style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
                 Quên mật khẩu?

@@ -144,14 +144,14 @@ const Sidebar = ({ role }) => {
         </div>
       ))}
 
-      <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '2px solid var(--gray-100)' }}>
+      <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '2px solid var(--gray-100)', display: 'flex', justifyContent: 'center' }}>
         <button 
           className="sidebar-link" 
           onClick={() => window.location.href = '/login'}
-          style={{ width: '100%', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--red)' }}
+          title="Đăng xuất"
+          style={{ width: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--red)', padding: '10px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <LogOut size={20} />
-          <span>Đăng xuất</span>
         </button>
       </div>
     </div>

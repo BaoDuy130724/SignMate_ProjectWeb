@@ -39,7 +39,6 @@ const TabButton = ({ active, icon: Icon, label, count, onClick }) => (
       background: active ? 'white' : 'transparent',
       color: active ? 'var(--primary)' : 'var(--gray-400)',
       borderBottom: active ? '3px solid var(--primary)' : '3px solid transparent',
-      fontFamily: "'Outfit', sans-serif",
     }}
   >
     <Icon size={18} />
