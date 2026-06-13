@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Loader2, ExternalLink, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Calendar, Search, Loader2, ExternalLink, Clock, CheckCircle2, XCircle, DollarSign, TrendingUp, Users } from 'lucide-react';
 import { subscriptionApi } from '../services/api';
 
 const SubscriptionManagement = () => {
@@ -52,23 +52,46 @@ const SubscriptionManagement = () => {
       </div>
 
       <div className="stat-grid" style={{ marginBottom: '32px' }}>
-        <div className="stat-card" style={{ borderLeft: '4px solid var(--green)' }}>
-          <div className="stat-label">Tổng doanh thu (Lifetime)</div>
-          <div className="stat-value">{stats.totalRevenue.toLocaleString('vi-VN')}đ</div>
-          <div style={{ fontSize: '12px', color: 'var(--gray-400)', marginTop: '8px' }}>
-            Tổng tích lũy từ trước đến nay
+        <div className="stat-card" style={{ borderLeft: '4px solid var(--green)', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', position: 'relative', zIndex: 1 }}>
+            <div>
+              <div className="stat-label" style={{ fontSize: '13px', fontWeight: 700, opacity: 0.8 }}>Tổng doanh thu (Lifetime)</div>
+              <div className="stat-value" style={{ margin: '8px 0', fontSize: '28px' }}>{stats.totalRevenue.toLocaleString('vi-VN')}đ</div>
+              <div style={{ fontSize: '12px', color: 'var(--gray-400)', fontWeight: 500 }}>
+                Tổng tích lũy từ trước đến nay
+              </div>
+            </div>
+            <div className="stat-icon card-icon-green" style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={24} />
+            </div>
           </div>
         </div>
-        <div className="stat-card" style={{ borderLeft: '4px solid var(--blue)' }}>
-          <div className="stat-label">Doanh thu định kỳ (MRR)</div>
-          <div className="stat-value">{stats.mrr.toLocaleString('vi-VN')}đ</div>
-          <div style={{ fontSize: '12px', color: 'var(--gray-400)', marginTop: '8px' }}>Dựa trên {stats.activeSubs} thuê bao active</div>
+
+        <div className="stat-card" style={{ borderLeft: '4px solid var(--blue)', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', position: 'relative', zIndex: 1 }}>
+            <div>
+              <div className="stat-label" style={{ fontSize: '13px', fontWeight: 700, opacity: 0.8 }}>Doanh thu định kỳ (MRR)</div>
+              <div className="stat-value" style={{ margin: '8px 0', fontSize: '28px' }}>{stats.mrr.toLocaleString('vi-VN')}đ</div>
+              <div style={{ fontSize: '12px', color: 'var(--gray-400)', fontWeight: 500 }}>Dựa trên {stats.activeSubs} thuê bao active</div>
+            </div>
+            <div className="stat-icon card-icon-blue" style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <TrendingUp size={24} />
+            </div>
+          </div>
         </div>
-        <div className="stat-card" style={{ borderLeft: '4px solid var(--purple)' }}>
-          <div className="stat-label">Thuê bao đang hoạt động</div>
-          <div className="stat-value">{stats.activeSubs}</div>
-          <div style={{ fontSize: '12px', color: 'var(--gray-400)', marginTop: '8px' }}>
-            {activeRate}% trên tổng {subscriptions.length} giao dịch
+
+        <div className="stat-card" style={{ borderLeft: '4px solid var(--purple)', padding: '24px', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', position: 'relative', zIndex: 1 }}>
+            <div>
+              <div className="stat-label" style={{ fontSize: '13px', fontWeight: 700, opacity: 0.8 }}>Thuê bao đang hoạt động</div>
+              <div className="stat-value" style={{ margin: '8px 0', fontSize: '28px' }}>{stats.activeSubs}</div>
+              <div style={{ fontSize: '12px', color: 'var(--gray-400)', fontWeight: 500 }}>
+                {activeRate}% trên tổng {subscriptions.length} giao dịch
+              </div>
+            </div>
+            <div className="stat-icon card-icon-purple" style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users size={24} />
+            </div>
           </div>
         </div>
       </div>

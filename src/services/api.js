@@ -380,9 +380,6 @@ export const practiceApi = {
   endSession: (sessionId) => post('/practice/session/end', { sessionId }),
 
   getHistory: (signId) => get(`/practice/history/${signId}`),
-
-  // body: ReportResultRequest (client-side scored attempt)
-  reportResult: (data) => post('/practice/report-result', data),
 };
 
 // ============================
