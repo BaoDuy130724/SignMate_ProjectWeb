@@ -3,12 +3,9 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from 'lucide-react';
 import { subscriptionApi } from '../services/api';
 
-// Đọc kết quả từ query string của cổng thanh toán — chỉ dùng làm "gợi ý" nhanh
+// Đọc kết quả từ query string của PayOS — chỉ dùng làm "gợi ý" nhanh
 // để báo thất bại sớm; thành công PHẢI được xác nhận lại với server.
-// Hỗ trợ cả VNPay (vnp_ResponseCode) lẫn PayOS (code/status/cancel) cho tương lai.
 const readGatewayHint = (params) => {
-  const vnpCode = params.get('vnp_ResponseCode');
-  if (vnpCode !== null) return vnpCode === '00' ? 'success' : 'failed';
   if (params.get('cancel') === 'true') return 'failed';
   const payosCode = params.get('code');
   if (payosCode !== null) return payosCode === '00' ? 'success' : 'failed';
@@ -16,6 +13,7 @@ const readGatewayHint = (params) => {
   if (payosStatus !== null) return payosStatus === 'PAID' ? 'success' : 'failed';
   return 'unknown';
 };
+
 
 const PaymentCallback = () => {
   const navigate = useNavigate();

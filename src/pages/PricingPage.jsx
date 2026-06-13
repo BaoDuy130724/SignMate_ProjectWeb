@@ -170,7 +170,7 @@ const PricingPage = () => {
                     disabled={subscribing === plan.id}
                     onClick={() => handleSubscribe(plan.id)}
                   >
-                    {subscribing === plan.id ? <Loader2 size={18} className="spinning" /> : (plan.priceVnd === 0 ? 'Bắt đầu ngay' : 'Thanh toán VNPay')}
+                    {subscribing === plan.id ? <Loader2 size={18} className="spinning" /> : (plan.priceVnd === 0 ? 'Bắt đầu ngay' : 'Thanh toán')}
                   </button>
                 </div>
               ))}
