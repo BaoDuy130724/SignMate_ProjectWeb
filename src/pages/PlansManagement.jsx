@@ -231,12 +231,12 @@ const PlansManagement = () => {
           <thead>
             <tr>
               <th style={{ width: '50px' }}>#</th>
-              <th>Tên gói</th>
-              <th>Giá tiền</th>
-              <th>Thời hạn</th>
-              <th>Phân loại</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Tên gói</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Giá tiền</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Thời hạn</th>
+              <th style={{ whiteSpace: 'nowrap' }}>Phân loại</th>
               <th>Tính năng nổi bật</th>
-              <th style={{ textAlign: 'right' }}>Thao tác</th>
+              <th style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -255,22 +255,22 @@ const PlansManagement = () => {
                     </div>
                     <div>
                       <div style={{ fontWeight: 800, color: 'var(--text-dark)' }}>{plan.name}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--gray-400)' }}>ID: #{plan.id}</div>
                     </div>
                   </div>
                 </td>
                 <td>
-                  <div style={{ fontWeight: 800, color: 'var(--text-dark)' }}>
+                  <div style={{ fontWeight: 800, color: 'var(--text-dark)', whiteSpace: 'nowrap' }}>
                     {plan.priceVnd?.toLocaleString('vi-VN')}đ
                   </div>
                 </td>
                 <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--gray-500)' }}>
-                    <Calendar size={14} /> {plan.durationDays} ngày
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--gray-600)', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                    <Calendar size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                    <span>{plan.durationDays} ngày</span>
                   </div>
                 </td>
                 <td>
-                  <span className={`badge ${getPlanTypeBadgeClass(plan.type)}`} style={{ minWidth: '70px', textAlign: 'center', fontWeight: 800 }}>
+                  <span className={`badge ${getPlanTypeBadgeClass(plan.type)}`} style={{ minWidth: '70px', textAlign: 'center', fontWeight: 800, whiteSpace: 'nowrap' }}>
                     {plan.type}
                   </span>
                 </td>
@@ -282,23 +282,23 @@ const PlansManagement = () => {
                       </span>
                     ))}
                     {parseFeatures(plan.featuresJson).length > 3 && (
-                      <span className="badge badge-gray" style={{ fontSize: '11px' }}>
+                      <span className="badge badge-gray" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
                         +{parseFeatures(plan.featuresJson).length - 3}
                       </span>
                     )}
                   </div>
                 </td>
-                <td style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-white btn-sm" onClick={() => {
+                <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <button className="action-btn" onClick={() => {
                       const feats = parseFeatures(plan.featuresJson).join('\n');
                       setEditingPlan({ ...plan, featuresText: feats });
                     }} title="Chỉnh sửa">
                       <Edit size={14} />
                     </button>
-                    <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2' }}
+                    <button className="action-btn action-btn-danger"
                       onClick={() => handleDeletePlan(plan.id, plan.name)} title="Xóa gói">
-                      <Trash2 size={14} />
+                      <Trash2 size={14} style={{ color: 'var(--red)' }} />
                     </button>
                   </div>
                 </td>
@@ -368,6 +368,32 @@ const PlansManagement = () => {
         .badge-blue { background: #e3f2fd; color: #1565c0; }
         .badge-purple { background: #f3e5f5; color: #6a1b9a; }
         .badge-green { background: #e8f5e9; color: #2e7d32; }
+
+        /* Premium Table Action Buttons styling */
+        .action-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: 1px solid var(--gray-100);
+          background: white;
+          color: var(--gray-600);
+          cursor: pointer;
+          transition: var(--transition);
+          box-shadow: none;
+        }
+        .action-btn:hover {
+          background: var(--gray-50);
+          color: var(--primary);
+          border-color: var(--primary-light);
+        }
+        .action-btn-danger:hover {
+          background: #fee2e2;
+          color: var(--red);
+          border-color: #fca5a5;
+        }
       `}</style>
     </>
   );

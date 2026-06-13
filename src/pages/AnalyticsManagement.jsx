@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, PieChart, Activity, Globe, Download, Calendar, ExternalLink, Loader2, ArrowUpRight, ArrowDownRight, Building2, MousePointer2 } from 'lucide-react';
+import { PieChart, Activity, Download, Loader2, ArrowUpRight, ArrowDownRight, Building2 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 
 const AnalyticsManagement = () => {
@@ -7,6 +7,7 @@ const AnalyticsManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('30d');
+  const [activeBarIndex, setActiveBarIndex] = useState(null);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -54,11 +55,21 @@ const AnalyticsManagement = () => {
   const safeData = {
     totalPracticeSessions: data?.totalPracticeSessions || 0,
     totalUsers: data?.totalUsers || 0,
+    totalCenters: data?.totalCenters || 0,
     totalSuccessfulAttempts: data?.totalSuccessfulAttempts || 0,
+    averageAccuracy: data?.averageAccuracy || 0,
+    b2bUsers: data?.b2bUsers || 0,
+    activeUsersLast30Days: data?.activeUsersLast30Days || 0,
+    sessionGrowthPercent: data?.sessionGrowthPercent ?? 0,
+    sessionsToday: data?.sessionsToday || 0,
+    attemptsToday: data?.attemptsToday || 0,
+    activeUsersToday: data?.activeUsersToday || 0,
     userGrowth: Array.isArray(data?.userGrowth) ? data.userGrowth : [],
     userDistribution: Array.isArray(data?.userDistribution) ? data.userDistribution : [],
     topCourses: Array.isArray(data?.topCourses) ? data.topCourses : []
   };
+
+  const growthPositive = safeData.sessionGrowthPercent >= 0;
 
   // Tính max value cho biểu đồ
   const maxGrowthValue = safeData.userGrowth.length > 0 
@@ -86,67 +97,112 @@ const AnalyticsManagement = () => {
 
       {/* Top Level KPIs */}
       <div className="stat-grid" style={{ marginBottom: '32px' }}>
-        <div className="stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span className="stat-label">User Engagement</span>
+        <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '8px', padding: '24px', minHeight: '142px', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="stat-label" style={{ margin: 0, fontWeight: 700 }}>User Engagement</span>
             <Activity size={18} color="var(--primary)" />
           </div>
-          <div className="stat-value">{(safeData.totalPracticeSessions || 0).toLocaleString()}</div>
-          <div style={{ color: 'var(--gray-400)', fontSize: '13px', marginTop: '4px' }}>Tổng phiên luyện tập (Sessions)</div>
-          <div className="trend-up" style={{ marginTop: '12px', fontSize: '12px', fontWeight: 700, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <ArrowUpRight size={14} /> +24% vs tháng trước
+          <div className="stat-value" style={{ margin: '4px 0 0', lineHeight: 1.2 }}>{(safeData.totalPracticeSessions || 0).toLocaleString()}</div>
+          <div style={{ color: 'var(--gray-400)', fontSize: '13px', marginTop: '2px' }}>Tổng phiên luyện tập (Sessions)</div>
+          <div style={{ marginTop: 'auto', paddingTop: '8px', fontSize: '12px', fontWeight: 700, color: growthPositive ? '#10b981' : '#ef4444', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {growthPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+            {growthPositive ? '+' : ''}{safeData.sessionGrowthPercent}% vs 30 ngày trước
           </div>
         </div>
-        <div className="stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span className="stat-label">Độ chính xác trung bình</span>
-            <PieChart size={18} color="var(--green)" />
+        <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '8px', padding: '24px', minHeight: '142px', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="stat-label" style={{ margin: 0, fontWeight: 700 }}>Độ chính xác trung bình</span>
+            <PieChart size={18} color="#10b981" />
           </div>
-          <div className="stat-value">
-            {safeData.totalPracticeSessions > 0 
-              ? ((safeData.totalSuccessfulAttempts / (safeData.totalPracticeSessions * 10)) * 100).toFixed(1) 
-              : '0.0'}%
+          <div className="stat-value" style={{ margin: '4px 0 0', lineHeight: 1.2 }}>
+            {safeData.averageAccuracy.toFixed(1)}%
           </div>
-          <div style={{ color: 'var(--gray-400)', fontSize: '13px', marginTop: '4px' }}>Tỷ lệ nhận diện đúng cử điệu</div>
+          <div style={{ color: 'var(--gray-400)', fontSize: '13px', marginTop: '2px' }}>Điểm trung bình mọi lượt chấm</div>
+          <div style={{ marginTop: 'auto', paddingTop: '8px', fontSize: '12px', color: 'var(--gray-400)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            • {safeData.totalSuccessfulAttempts.toLocaleString()} lượt đạt chuẩn (≥80%)
+          </div>
         </div>
-        <div className="stat-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <span className="stat-label">Lưu lượng Truy cập</span>
-            <Globe size={18} color="var(--blue)" />
+        <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '8px', padding: '24px', minHeight: '142px', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="stat-label" style={{ margin: 0, fontWeight: 700 }}>Người dùng hoạt động</span>
+            <Activity size={18} color="var(--blue)" />
           </div>
-          <div className="stat-value">{(safeData.totalUsers * 4.2).toFixed(0)}</div>
-          <div style={{ color: 'var(--gray-400)', fontSize: '13px', marginTop: '4px' }}>Traffic tích lũy (Page views)</div>
+          <div className="stat-value" style={{ margin: '4px 0 0', lineHeight: 1.2 }}>{safeData.activeUsersLast30Days.toLocaleString()}</div>
+          <div style={{ color: 'var(--gray-400)', fontSize: '13px', marginTop: '2px' }}>Có luyện tập trong 30 ngày</div>
+          <div style={{ marginTop: 'auto', paddingTop: '8px', fontSize: '12px', color: 'var(--gray-400)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            • {safeData.totalUsers > 0 ? ((safeData.activeUsersLast30Days / safeData.totalUsers) * 100).toFixed(0) : 0}% trên tổng người dùng
+          </div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '32px' }}>
         {/* User Growth Chart (Visual Representation) */}
-        <div className="card">
+        <div className="card" style={{ position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <h3 style={{ margin: 0 }}>Xu hướng Tăng trưởng Người dùng</h3>
-            <span style={{ fontSize: '13px', color: 'var(--gray-400)' }}>Dữ liệu 30 ngày qua</span>
+            <div>
+              <h3 style={{ margin: 0 }}>Xu hướng Tăng trưởng Người dùng</h3>
+              <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--gray-400)' }}>Biểu đồ cột thể hiện lượng tài khoản mới đăng ký hàng ngày</p>
+            </div>
+            <span style={{ fontSize: '13px', color: 'var(--gray-400)', fontWeight: 600, background: 'var(--gray-50)', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--gray-100)' }}>30 ngày gần nhất</span>
           </div>
-          <div style={{ height: '300px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px', gap: '4px', borderBottom: '1px solid var(--gray-100)' }}>
+          
+          <div style={{ height: '300px', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px', borderBottom: '1px solid var(--gray-200)', zIndex: 1 }}>
+            {/* Grid Lines in background */}
+            <div style={{ position: 'absolute', inset: '0 10px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none', zIndex: 0 }}>
+              <div style={{ borderBottom: '1px dashed var(--gray-100)', height: 0, width: '100%', marginTop: '30px' }}></div>
+              <div style={{ borderBottom: '1px dashed var(--gray-100)', height: 0, width: '100%' }}></div>
+              <div style={{ borderBottom: '1px dashed var(--gray-100)', height: 0, width: '100%' }}></div>
+              <div style={{ borderBottom: '1px dashed var(--gray-100)', height: 0, width: '100%', marginBottom: '30px' }}></div>
+            </div>
+
             {safeData.userGrowth.length > 0 ? (
               safeData.userGrowth.map((g, i) => (
-                <div key={i} className="chart-bar-container" style={{ flex: 1, position: 'relative' }}>
+                <div key={i} className="chart-bar-container" style={{ flex: 1, position: 'relative', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1 }}
+                  onMouseEnter={() => setActiveBarIndex(i)}
+                  onMouseLeave={() => setActiveBarIndex(null)}>
+                  
+                  {activeBarIndex === i && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: `${Math.max(10, ((g.Value || g.value || 0) / maxGrowthValue) * 230) + 12}px`,
+                      background: 'rgba(26, 18, 37, 0.95)',
+                      color: '#fff',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      whiteSpace: 'nowrap',
+                      textAlign: 'center',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      <div style={{ fontWeight: 700, color: 'var(--purple-dark)' }}>{g.Label || g.label}</div>
+                      <div style={{ fontWeight: 800, marginTop: '2px' }}>+{g.Value || g.value || 0} học viên mới</div>
+                    </div>
+                  )}
+                  
                   <div 
                     className="chart-bar" 
                     style={{ 
-                      height: `${Math.max(10, ((g.Value || g.value || 0) / maxGrowthValue) * 250)}px`,
-                      width: '100%',
-                      background: 'linear-gradient(to top, var(--primary), var(--purple))',
+                      height: `${Math.max(10, ((g.Value || g.value || 0) / maxGrowthValue) * 230)}px`,
+                      width: '65%',
+                      background: activeBarIndex === i 
+                        ? 'var(--primary)' 
+                        : 'linear-gradient(to top, var(--primary), var(--purple))',
                       borderRadius: '4px 4px 0 0',
-                      transition: 'all 0.5s ease-out'
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer',
+                      opacity: activeBarIndex !== null && activeBarIndex !== i ? 0.4 : 1
                     }}
                   ></div>
                 </div>
               ))
             ) : (
-              <div style={{ width: '100%', textAlign: 'center', paddingBottom: '100px', color: 'var(--gray-300)' }}>Không có dữ liệu tăng trưởng</div>
+              <div style={{ width: '100%', textAlign: 'center', paddingBottom: '100px', color: 'var(--gray-300)', zIndex: 1 }}>Không có dữ liệu tăng trưởng</div>
             )}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '11px', color: 'var(--gray-400)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '11px', color: 'var(--gray-400)', fontWeight: 600 }}>
             <span>{safeData.userGrowth[0]?.Label || safeData.userGrowth[0]?.label || 'Bắt đầu'}</span>
             <span>{safeData.userGrowth[safeData.userGrowth.length - 1]?.Label || safeData.userGrowth[safeData.userGrowth.length - 1]?.label || 'Hiện tại'}</span>
           </div>
@@ -179,10 +235,10 @@ const AnalyticsManagement = () => {
             )}
             <div style={{ marginTop: '20px', padding: '20px', background: 'var(--gray-50)', borderRadius: '12px', fontSize: '14px' }}>
               <div style={{ color: 'var(--gray-500)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Users size={16} /> User Acquisition Cost (UAC)
+                <Building2 size={16} /> Mạng lưới Đối tác
               </div>
-              <div style={{ fontWeight: 800, fontSize: '18px' }}>48.000đ / user</div>
-              <div style={{ fontSize: '12px', color: 'var(--green)', fontWeight: 700, marginTop: '4px' }}>↓ Giảm 12% so với quý trước</div>
+              <div style={{ fontWeight: 800, fontSize: '18px' }}>{safeData.totalCenters.toLocaleString()} trung tâm</div>
+              <div style={{ fontSize: '12px', color: 'var(--gray-500)', fontWeight: 700, marginTop: '4px' }}>{safeData.b2bUsers.toLocaleString()} học viên B2B đang theo học</div>
             </div>
           </div>
         </div>
@@ -197,20 +253,25 @@ const AnalyticsManagement = () => {
               <tr>
                 <th>Khóa học</th>
                 <th>Người học</th>
-                <th>Tăng trưởng</th>
+                <th>HV mới (30 ngày)</th>
                 <th style={{ textAlign: 'right' }}>% Hoàn thành</th>
               </tr>
             </thead>
             <tbody>
               {safeData.topCourses.length > 0 ? (
-                safeData.topCourses.map((c, i) => (
+                safeData.topCourses.map((c, i) => {
+                  const enrollments = c.enrollments ?? c.Enrollments ?? 0;
+                  const newEnroll = c.newEnrollmentsLast30Days ?? c.NewEnrollmentsLast30Days ?? 0;
+                  const completion = c.completionRate ?? c.CompletionRate ?? 0;
+                  return (
                   <tr key={i}>
-                    <td style={{ fontWeight: 800 }}>{c.Name || c.name}</td>
-                    <td style={{ fontWeight: 700 }}>{c.Value || c.value}</td>
-                    <td><span style={{ color: 'var(--green)', fontWeight: 700 }}>+{Math.floor(Math.random() * 20)}%</span></td>
-                    <td style={{ textAlign: 'right' }}>{60 + Math.floor(Math.random() * 30)}%</td>
+                    <td style={{ fontWeight: 800 }}>{c.name || c.Name}</td>
+                    <td style={{ fontWeight: 700 }}>{enrollments}</td>
+                    <td><span style={{ color: newEnroll > 0 ? 'var(--green)' : 'var(--gray-400)', fontWeight: 700 }}>{newEnroll > 0 ? `+${newEnroll}` : '0'}</span></td>
+                    <td style={{ textAlign: 'right' }}>{completion}%</td>
                   </tr>
-                ))
+                  );
+                })
               ) : (
                 <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px', color: 'var(--gray-300)' }}>Chưa có dữ liệu khóa học</td></tr>
               )}
@@ -218,26 +279,23 @@ const AnalyticsManagement = () => {
           </table>
         </div>
 
-        {/* System Health */}
+        {/* Hoạt động hôm nay (số liệu thật trong ngày, giờ VN) */}
         <div className="card" style={{ background: 'linear-gradient(135deg, #2D3436 0%, #000 100%)', color: 'white' }}>
-          <h3 style={{ color: 'white', marginBottom: '16px' }}>Sức khỏe Hệ thống</h3>
+          <h3 style={{ color: 'white', marginBottom: '16px' }}>Hoạt động Hôm nay</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '14px', opacity: 0.8 }}>Server Uptime</span>
-              <span style={{ color: 'var(--green)', fontWeight: 800 }}>99.98%</span>
+              <span style={{ fontSize: '14px', opacity: 0.8 }}>Phiên luyện tập</span>
+              <span style={{ color: 'var(--green)', fontWeight: 800 }}>{safeData.sessionsToday.toLocaleString()}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '14px', opacity: 0.8 }}>API Latency</span>
-              <span style={{ color: 'var(--green)', fontWeight: 800 }}>84ms</span>
+              <span style={{ fontSize: '14px', opacity: 0.8 }}>Học viên hoạt động</span>
+              <span style={{ color: 'var(--green)', fontWeight: 800 }}>{safeData.activeUsersToday.toLocaleString()}</span>
             </div>
             <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
             <div style={{ textAlign: 'center', padding: '12px' }}>
-              <div style={{ fontSize: '12px', opacity: 0.6, marginBottom: '4px' }}>AI Recognized Today</div>
-              <div style={{ fontSize: '24px', fontWeight: 800 }}>1,248</div>
+              <div style={{ fontSize: '12px', opacity: 0.6, marginBottom: '4px' }}>Lượt AI chấm điểm hôm nay</div>
+              <div style={{ fontSize: '24px', fontWeight: 800 }}>{safeData.attemptsToday.toLocaleString()}</div>
             </div>
-            <button className="btn btn-white" style={{ width: '100%', marginTop: 'auto' }}>
-              Chi tiết Server <ExternalLink size={14} />
-            </button>
           </div>
         </div>
       </div>

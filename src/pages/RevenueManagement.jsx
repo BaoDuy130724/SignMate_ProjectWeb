@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  DollarSign, TrendingUp, TrendingDown, Calendar, Search, 
-  ArrowUpRight, ArrowDownRight, CreditCard, PieChart, 
-  FileText, Download, Clock, CheckCircle2, AlertCircle, Loader2, 
-  ArrowRight, Landmark, Layers, Users
+import {
+  TrendingUp, ArrowUpRight, ArrowDownRight, FileText, Download,
+  Clock, CheckCircle2, Loader2, Landmark, Layers, Users
 } from 'lucide-react';
 import { subscriptionApi } from '../services/api';
 
@@ -12,6 +10,7 @@ const RevenueManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState('30d');
+  const [activeBarIndex, setActiveBarIndex] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -29,10 +28,59 @@ const RevenueManagement = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Thống kê doanh nghiệp
-  const totalRevenue = transactions.reduce((acc, t) => acc + (t.priceVnd || 0), 0);
-  const b2bRevenue = transactions.filter(t => t.source === 'B2B' || t.centerName).reduce((acc, t) => acc + (t.priceVnd || 0), 0);
+  // ── Thống kê doanh thu — tính 100% từ danh sách giao dịch thật ──
+  const isB2B = (t) => !!(t.centerName || t.CenterName); // B2B = học viên gắn trung tâm
+  const txAmount = (t) => t.priceVnd || 0;
+
+  const totalRevenue = transactions.reduce((acc, t) => acc + txAmount(t), 0);
+  const b2bRevenue = transactions.filter(isB2B).reduce((acc, t) => acc + txAmount(t), 0);
   const b2cRevenue = totalRevenue - b2bRevenue;
+
+  const b2bPercent = totalRevenue > 0 ? Math.round((b2bRevenue / totalRevenue) * 100) : 0;
+  const b2cPercent = totalRevenue > 0 ? 100 - b2bPercent : 0;
+
+  // 6 tháng gần nhất: gộp doanh thu theo tháng StartDate của gói (số thật).
+  const monthBuckets = [];
+  {
+    const base = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(base.getFullYear(), base.getMonth() - i, 1);
+      monthBuckets.push({ year: d.getFullYear(), month: d.getMonth(), label: `Th ${d.getMonth() + 1}` });
+    }
+  }
+  const inMonth = (t, year, month) => {
+    const raw = t.startDate || t.StartDate;
+    if (!raw) return false;
+    const d = new Date(raw);
+    return d.getFullYear() === year && d.getMonth() === month;
+  };
+  const sumIn = (year, month, pred) => transactions.reduce(
+    (acc, t) => (inMonth(t, year, month) && (!pred || pred(t)) ? acc + txAmount(t) : acc), 0);
+  const countIn = (year, month) => transactions.filter(t => inMonth(t, year, month)).length;
+
+  const monthlySeries = monthBuckets.map(m => {
+    const total = sumIn(m.year, m.month);
+    const b2b = sumIn(m.year, m.month, isB2B);
+    return { label: m.label, total, b2b, b2c: total - b2b };
+  });
+  const maxMonthVal = Math.max(1, ...monthlySeries.map(m => Math.max(m.b2b, m.b2c)));
+
+  // Tăng trưởng tháng này so với tháng trước (số thật, không hardcode).
+  const curMb = monthBuckets[monthBuckets.length - 1];
+  const prevMb = monthBuckets[monthBuckets.length - 2];
+  const cur = monthlySeries[monthlySeries.length - 1] || { total: 0, b2b: 0, b2c: 0 };
+  const prev = monthlySeries[monthlySeries.length - 2] || { total: 0, b2b: 0, b2c: 0 };
+  const pctChange = (c, p) => (p > 0 ? ((c - p) / p) * 100 : (c > 0 ? 100 : 0));
+  const fmtTrend = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const totalTrend = pctChange(cur.total, prev.total);
+  const b2bTrend = pctChange(cur.b2b, prev.b2b);
+  const b2cTrend = pctChange(cur.b2c, prev.b2c);
+
+  // ARPU thật thay cho "tỷ suất lợi nhuận" — hệ thống không có dữ liệu chi phí để tính margin.
+  const arpu = transactions.length > 0 ? Math.round(totalRevenue / transactions.length) : 0;
+  const curArpu = countIn(curMb.year, curMb.month) > 0 ? cur.total / countIn(curMb.year, curMb.month) : 0;
+  const prevArpu = countIn(prevMb.year, prevMb.month) > 0 ? prev.total / countIn(prevMb.year, prevMb.month) : 0;
+  const arpuTrend = pctChange(curArpu, prevArpu);
 
   const StatPanel = ({ title, value, icon: Icon, trend, trendValue, color }) => (
     <div className="card" style={{ padding: '24px', border: '1px solid var(--gray-100)' }}>
@@ -52,6 +100,16 @@ const RevenueManagement = () => {
 
   if (loading) return <div style={{ textAlign: 'center', padding: '120px' }}><Loader2 className="spinning" /></div>;
 
+  if (error) return (
+    <div style={{ padding: '120px', textAlign: 'center' }}>
+      <div className="card" style={{ maxWidth: '500px', margin: '0 auto', border: '2px solid var(--red-light)' }}>
+        <h3 style={{ color: 'var(--red)', marginBottom: '12px' }}>Không tải được dữ liệu tài chính</h3>
+        <p style={{ color: 'var(--gray-500)', marginBottom: '24px' }}>{error}</p>
+        <button className="btn btn-primary" onClick={loadData}>Thử lại</button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -70,53 +128,144 @@ const RevenueManagement = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '32px' }}>
-        <StatPanel title="Tổng Doanh Thu" value={`${totalRevenue.toLocaleString('vi-VN')}đ`} icon={Landmark} trend="up" trendValue="+12.5%" color="var(--primary)" />
-        <StatPanel title="Doanh thu B2B" value={`${b2bRevenue.toLocaleString('vi-VN')}đ`} icon={Layers} trend="up" trendValue="+8.2%" color="var(--purple)" />
-        <StatPanel title="Doanh thu B2C" value={`${b2cRevenue.toLocaleString('vi-VN')}đ`} icon={Users} trend="down" trendValue="-3.1%" color="var(--blue)" />
-        <StatPanel title="Tỷ suất Lợi nhuận" value="68.2%" icon={TrendingUp} trend="up" trendValue="+2.4%" color="var(--green)" />
+        <StatPanel title="Tổng Doanh Thu" value={`${totalRevenue.toLocaleString('vi-VN')}đ`} icon={Landmark} trend={totalTrend >= 0 ? 'up' : 'down'} trendValue={fmtTrend(totalTrend)} color="var(--primary)" />
+        <StatPanel title="Doanh thu B2B" value={`${b2bRevenue.toLocaleString('vi-VN')}đ`} icon={Layers} trend={b2bTrend >= 0 ? 'up' : 'down'} trendValue={fmtTrend(b2bTrend)} color="var(--purple)" />
+        <StatPanel title="Doanh thu B2C" value={`${b2cRevenue.toLocaleString('vi-VN')}đ`} icon={Users} trend={b2cTrend >= 0 ? 'up' : 'down'} trendValue={fmtTrend(b2cTrend)} color="var(--blue)" />
+        <StatPanel title="Doanh thu TB / Khách" value={`${arpu.toLocaleString('vi-VN')}đ`} icon={TrendingUp} trend={arpuTrend >= 0 ? 'up' : 'down'} trendValue={fmtTrend(arpuTrend)} color="var(--green)" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px', marginBottom: '32px' }}>
-        {/* Doanh thu biểu đồ placeholder */}
-        <div className="card" style={{ padding: '32px' }}>
+        <div className="card" style={{ padding: '32px', position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-             <h3 style={{ margin: 0 }}>Xu hướng Dòng tiền</h3>
-             <div style={{ display: 'flex', gap: '16px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--primary)' }}></div> Dự kiến</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--gray-300)' }}></div> Thực thu</div>
+             <div>
+                <h3 style={{ margin: 0 }}>Doanh thu theo tháng</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--gray-400)' }}>Doanh thu B2B và B2C 6 tháng gần nhất (theo ngày bắt đầu gói)</p>
+             </div>
+             <div style={{ display: 'flex', gap: '16px', fontSize: '13px', fontWeight: 600 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--primary)' }}></div> B2B</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--blue)' }}></div> B2C</div>
              </div>
           </div>
-          <div style={{ height: '240px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px' }}>
-             {[60, 45, 80, 55, 90, 70, 85].map((h, i) => (
-               <div key={i} style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                  <div style={{ height: `${h}%`, width: '100%', background: 'linear-gradient(to top, var(--primary), var(--purple))', borderRadius: '4px 4px 0 0', opacity: 0.9 }}></div>
-                  <div style={{ height: `${h * 0.7}%`, width: '60%', background: 'var(--gray-200)', borderRadius: '4px 4px 0 0', position: 'absolute', bottom: 0, zIndex: 1 }}></div>
-                  <span style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '8px' }}>Th {i+1}</span>
-               </div>
-             ))}
+          
+          <div style={{ height: '200px', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--gray-100)', paddingBottom: '8px', zIndex: 1 }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none', zIndex: 0 }}>
+              <div style={{ borderBottom: '1px dashed var(--gray-50)', height: 0, width: '100%' }}></div>
+              <div style={{ borderBottom: '1px dashed var(--gray-50)', height: 0, width: '100%' }}></div>
+              <div style={{ borderBottom: '1px dashed var(--gray-50)', height: 0, width: '100%' }}></div>
+              <div style={{ borderBottom: '1px dashed var(--gray-50)', height: 0, width: '100%' }}></div>
+            </div>
+
+            {monthlySeries.map((d, i) => {
+              const b2bHeight = (d.b2b / maxMonthVal) * 100;
+              const b2cHeight = (d.b2c / maxMonthVal) * 100;
+              return (
+                <div key={i} style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '4px', zIndex: 1 }}
+                  onMouseEnter={() => setActiveBarIndex(i)}
+                  onMouseLeave={() => setActiveBarIndex(null)}>
+
+                  <div style={{
+                    height: `${b2bHeight}%`,
+                    width: '35%',
+                    background: 'linear-gradient(to top, var(--primary), var(--purple))',
+                    borderRadius: '4px 4px 0 0',
+                    transition: 'all 0.2s ease',
+                    opacity: activeBarIndex !== null && activeBarIndex !== i ? 0.4 : 0.95
+                  }}></div>
+
+                  <div style={{
+                    height: `${b2cHeight}%`,
+                    width: '35%',
+                    background: 'linear-gradient(to top, var(--blue), var(--blue-dark))',
+                    borderRadius: '4px 4px 0 0',
+                    transition: 'all 0.2s ease',
+                    opacity: activeBarIndex !== null && activeBarIndex !== i ? 0.4 : 0.95
+                  }}></div>
+
+                  {activeBarIndex === i && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: `${Math.max(b2bHeight, b2cHeight) + 6}%`,
+                      background: 'rgba(26, 18, 37, 0.95)',
+                      color: '#fff',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                      pointerEvents: 'none',
+                      zIndex: 10,
+                      whiteSpace: 'nowrap',
+                      border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      <div style={{ fontWeight: 700, color: 'var(--purple-dark)', marginBottom: '4px', textAlign: 'center' }}>{d.label}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div>• B2B: <strong style={{ color: 'var(--purple)' }}>{d.b2b.toLocaleString('vi-VN')}đ</strong></div>
+                        <div>• B2C: <strong style={{ color: 'var(--blue)' }}>{d.b2c.toLocaleString('vi-VN')}đ</strong></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '0 10px' }}>
+            {monthlySeries.map((m, i) => (
+              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: '11px', color: 'var(--gray-400)', fontWeight: 600 }}>
+                {m.label}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Tỷ lệ đóng góp */}
-        <div className="card" style={{ padding: '32px' }}>
-          <h3 style={{ marginBottom: '24px' }}>Cơ cấu Doanh thu</h3>
+        <div className="card" style={{ padding: '32px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <h3 style={{ marginBottom: '4px' }}>Cơ cấu Doanh thu</h3>
+            <p style={{ fontSize: '12px', color: 'var(--gray-400)', marginBottom: '24px' }}>Tỷ lệ đóng góp doanh thu của B2B và B2C</p>
+          </div>
+          
           <div style={{ position: 'relative', height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: '140px', height: '140px', borderRadius: '50%', border: '25px solid var(--primary)', position: 'relative' }}>
-               <div style={{ width: '140px', height: '140px', borderRadius: '50%', border: '25px solid var(--blue)', borderTopColor: 'transparent', borderRightColor: 'transparent', position: 'absolute', top: '-25px', left: '-25px' }}></div>
-            </div>
-            <div style={{ position: 'absolute', textAlign: 'center' }}>
-               <div style={{ fontSize: '24px', fontWeight: 900 }}>B2B</div>
-               <div style={{ fontSize: '12px', color: 'var(--gray-400)', fontWeight: 700 }}>CHỦ ĐẠO</div>
+            <div style={{
+              width: '150px',
+              height: '150px',
+              borderRadius: '50%',
+              background: `conic-gradient(var(--primary) 0% ${b2bPercent}%, var(--blue) ${b2bPercent}% 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: 'var(--shadow-sm)',
+              position: 'relative'
+            }}>
+              <div style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                background: 'white',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: 'inset var(--shadow-sm)'
+              }}>
+                <span style={{ fontSize: '24px', fontWeight: 900, color: 'var(--text-dark)' }}>{b2bPercent}%</span>
+                <span style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700, textTransform: 'uppercase' }}>B2B</span>
+              </div>
             </div>
           </div>
+          
           <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                <span style={{ fontWeight: 700, color: 'var(--primary)' }}>Đối tác B2B</span>
-                <span style={{ fontWeight: 800 }}>82.5%</span>
+             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></span>
+                  Đối tác B2B
+                </span>
+                <span style={{ fontWeight: 800, color: 'var(--text-dark)' }}>{b2bPercent}%</span>
              </div>
-             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                <span style={{ fontWeight: 700, color: 'var(--blue)' }}>Cá nhân B2C</span>
-                <span style={{ fontWeight: 800 }}>17.5%</span>
+             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--blue)' }}></span>
+                  Cá nhân B2C
+                </span>
+                <span style={{ fontWeight: 800, color: 'var(--text-dark)' }}>{b2cPercent}%</span>
              </div>
           </div>
         </div>
@@ -147,21 +296,53 @@ const RevenueManagement = () => {
               <tr key={i}>
                 <td style={{ paddingLeft: '24px', fontWeight: 700, color: 'var(--gray-400)' }}>#{t.id || `TX${2000+i}`}</td>
                 <td style={{ fontWeight: 800 }}>{t.userFullName}</td>
-                <td><span className={`badge badge-${t.source === 'B2B' || t.centerName ? 'purple' : 'blue'}`}>{t.source || (t.centerName ? 'B2B' : 'B2C')}</span></td>
-                <td style={{ fontWeight: 600 }}>{t.planName}</td>
-                <td style={{ fontWeight: 900 }}>{(t.priceVnd || 0).toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--gray-300)' }}>đ</span></td>
+                <td><span className={`badge badge-${t.source === 'B2B' || t.centerName ? 'purple' : 'blue'}`} style={{ whiteSpace: 'nowrap' }}>{t.source || (t.centerName ? 'B2B' : 'B2C')}</span></td>
+                <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>{t.planName}</td>
+                <td style={{ fontWeight: 900, whiteSpace: 'nowrap' }}>{(t.priceVnd || 0).toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--gray-300)' }}>đ</span></td>
                 <td>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: t.isActive ? 'var(--green)' : 'var(--red)', fontWeight: 700, fontSize: '13px' }}>
-                    {t.isActive ? <CheckCircle2 size={14} /> : <Clock size={14} />}
-                    {t.isActive ? 'Hoạt động' : 'Hết hạn'}
-                  </span>
+                  {t.isActive ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#059669', fontWeight: 700, fontSize: '13px', whiteSpace: 'nowrap' }}>
+                      <CheckCircle2 size={14} /> Hoạt động
+                    </span>
+                  ) : (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ef4444', fontWeight: 700, fontSize: '13px', whiteSpace: 'nowrap' }}>
+                      <Clock size={14} /> Hết hạn
+                    </span>
+                  )}
                 </td>
-                <td style={{ textAlign: 'right', paddingRight: '24px' }}><button className="btn btn-white btn-sm"><FileText size={14} /></button></td>
+                <td style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
+                  <button className="action-btn" title="Xem hóa đơn">
+                    <FileText size={14} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <style>{`
+        /* Premium Table Action Buttons styling */
+        .action-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: 1px solid var(--gray-100);
+          background: white;
+          color: var(--gray-600);
+          cursor: pointer;
+          transition: var(--transition);
+          box-shadow: none;
+        }
+        .action-btn:hover {
+          background: var(--gray-50);
+          color: var(--primary);
+          border-color: var(--primary-light);
+        }
+      `}</style>
     </>
   );
 };

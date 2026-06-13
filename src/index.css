@@ -234,7 +234,11 @@ h3 { font-size: clamp(20px, 3vw, 28px); }
   transition: var(--transition);
 }
 
-.card:hover {
+.card.clickable {
+  cursor: pointer;
+}
+
+.card.clickable:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
 }
@@ -865,7 +869,11 @@ h3 { font-size: clamp(20px, 3vw, 28px); }
   transition: var(--transition);
 }
 
-.stat-card:hover {
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.clickable:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
 }

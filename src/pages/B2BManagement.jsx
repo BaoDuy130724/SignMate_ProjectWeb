@@ -141,35 +141,44 @@ const B2BManagement = () => {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '32px' }}>
-        <div className="stat-card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between', minHeight: '136px', padding: '24px', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div className="stat-label">Tổng số Trung tâm</div>
+              <div className="stat-label" style={{ marginBottom: '4px' }}>Tổng số Trung tâm</div>
               <div className="stat-value">{centers.length}</div>
             </div>
             <div className="stat-icon card-icon-purple"><Building2 size={24} /></div>
           </div>
+          <div style={{ borderTop: '1px solid var(--gray-100)', paddingTop: '12px', fontSize: '13px', color: 'var(--gray-400)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary-dark)' }}></span>
+            Hệ thống đối tác liên kết
+          </div>
         </div>
-        <div className="stat-card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between', minHeight: '136px', padding: '24px', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div className="stat-label">Tổng Seats cấp phát</div>
+              <div className="stat-label" style={{ marginBottom: '4px' }}>Tổng Seats cấp phát</div>
               <div className="stat-value">{totalSeats}</div>
             </div>
             <div className="stat-icon card-icon-blue"><Users size={24} /></div>
           </div>
+          <div style={{ borderTop: '1px solid var(--gray-100)', paddingTop: '12px', fontSize: '13px', color: 'var(--gray-400)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--blue)' }}></span>
+            Tổng giới hạn Seats cho học viên
+          </div>
         </div>
-        <div className="stat-card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div className="stat-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'space-between', minHeight: '136px', padding: '24px', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div className="stat-label">Tỷ lệ Active</div>
+              <div className="stat-label" style={{ marginBottom: '4px' }}>Tỷ lệ Active</div>
               <div className="stat-value">
                 {centers.length > 0 ? Math.round((activeCount / centers.length) * 100) : 0}%
               </div>
             </div>
             <div className="stat-icon card-icon-green"><Activity size={24} /></div>
           </div>
-          <div style={{ marginTop: '12px', fontSize: '13px', color: 'var(--gray-400)' }}>
+          <div style={{ borderTop: '1px solid var(--gray-100)', paddingTop: '12px', fontSize: '13px', color: 'var(--gray-400)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary-dark)' }}></span>
             {activeCount}/{centers.length} đang hoạt động
           </div>
         </div>
@@ -269,16 +278,16 @@ const B2BManagement = () => {
 
       {/* Centers Table */}
       <div className="table-wrapper">
-        <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <div className="table-title">Hệ thống Trung tâm đối tác</div>
+        <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px' }}>
+          <div className="table-title" style={{ margin: 0 }}>Hệ thống Trung tâm đối tác</div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }} />
               <input
                 type="text"
                 placeholder="Tìm trung tâm..."
                 className="form-input"
-                style={{ paddingLeft: '36px', height: '36px', margin: 0, width: '240px', fontSize: '14px' }}
+                style={{ paddingLeft: '36px', height: '38px', margin: 0, width: '260px', fontSize: '14px', borderRadius: '10px' }}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
@@ -320,23 +329,31 @@ const B2BManagement = () => {
                   <div style={{ fontSize: '11px', color: 'var(--gray-400)', textTransform: 'uppercase' }}>User Licenses</div>
                 </td>
                 <td>
-                  {c.isActive
-                    ? <span className="badge badge-green">Hoạt động</span>
-                    : <span className="badge badge-yellow">Vô hiệu</span>}
+                  {c.isActive ? (
+                    <span className="status-badge status-badge-active">
+                      <span className="status-dot"></span>
+                      Hoạt động
+                    </span>
+                  ) : (
+                    <span className="status-badge status-badge-inactive">
+                      <span className="status-dot"></span>
+                      Vô hiệu
+                    </span>
+                  )}
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-blue btn-sm" style={{ fontSize: '12px', padding: '6px 10px' }}
-                      onClick={() => setAdminFormCenterId(c.id)}>
-                      <UserCheck size={14} /> Admin
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <button className="action-btn action-btn-primary"
+                      onClick={() => setAdminFormCenterId(c.id)} title="Cấp quyền Admin">
+                      <UserCheck size={14} style={{ marginRight: '4px' }} /> Admin
                     </button>
-                    <button className="btn btn-white btn-sm" style={{ padding: '6px 10px' }}
+                    <button className="action-btn"
                       onClick={() => setEditingCenter({ ...c })} title="Chỉnh sửa">
                       <Edit size={14} />
                     </button>
-                    <button className="btn btn-outline btn-sm" style={{ color: 'var(--red)', borderColor: '#fee2e2', padding: '6px 10px' }}
+                    <button className="action-btn action-btn-danger"
                       onClick={() => handleDeleteCenter(c.id, c.name)} title="Xóa">
-                      <Trash2 size={14} />
+                      <Trash2 size={14} style={{ color: 'var(--red)' }} />
                     </button>
                   </div>
                 </td>
@@ -408,6 +425,82 @@ const B2BManagement = () => {
         }
         .spinning { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Premium Table Action Buttons styling */
+        .action-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: 1px solid var(--gray-100);
+          background: white;
+          color: var(--gray-600);
+          cursor: pointer;
+          transition: var(--transition);
+          box-shadow: none;
+        }
+        .action-btn:hover {
+          background: var(--gray-50);
+          color: var(--primary);
+          border-color: var(--primary-light);
+        }
+        .action-btn-danger:hover {
+          background: #fee2e2;
+          color: var(--red);
+          border-color: #fca5a5;
+        }
+        .action-btn-primary {
+          background: var(--primary-light);
+          color: var(--primary-dark);
+          border: none;
+          font-weight: 700;
+          padding: 0 12px;
+          width: auto;
+          height: 32px;
+          font-size: 13px;
+        }
+        .action-btn-primary:hover {
+          background: var(--primary);
+          color: white;
+        }
+
+        /* Premium status badge styles */
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 9999px;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          white-space: nowrap;
+          letter-spacing: 0.5px;
+        }
+        .status-badge-active {
+          background-color: #ecfdf5;
+          color: #065f46;
+          border: 1px solid #a7f3d0;
+        }
+        .status-badge-active .status-dot {
+          background-color: #10b981;
+        }
+        .status-badge-inactive {
+          background-color: #fef2f2;
+          color: #991b1b;
+          border: 1px solid #fecaca;
+        }
+        .status-badge-inactive .status-dot {
+          background-color: #ef4444;
+        }
+        .status-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          display: inline-block;
+        }
       `}</style>
     </>
   );

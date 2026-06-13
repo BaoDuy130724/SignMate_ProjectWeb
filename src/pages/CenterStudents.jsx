@@ -109,24 +109,24 @@ const CenterStudents = () => {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px', marginBottom: '32px' }}>
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--primary-light)', border: 'none' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '32px' }}>
+        <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px' }}>
+          <div className="stat-icon card-icon-purple">
             <Users size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 700 }}>TỔNG SỐ</div>
-            <div style={{ fontSize: '24px', fontWeight: 800 }}>{students.length} <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--gray-400)' }}>học viên</span></div>
+            <div className="stat-label">Tổng số Học viên</div>
+            <div className="stat-value">{students.length}</div>
           </div>
         </div>
         
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px', background: '#f0f9ff', border: 'none' }}>
-           <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#0ea5e9', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '24px' }}>
+          <div className="stat-icon card-icon-blue">
             <Activity size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '13px', color: '#0ea5e9', fontWeight: 700 }}>ĐÃ ĐĂNG KÝ</div>
-            <div style={{ fontSize: '24px', fontWeight: 800 }}>{students.length} <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--gray-400)' }}>tài khoản</span></div>
+            <div className="stat-label">Đã cấp Tài khoản</div>
+            <div className="stat-value">{students.length}</div>
           </div>
         </div>
       </div>

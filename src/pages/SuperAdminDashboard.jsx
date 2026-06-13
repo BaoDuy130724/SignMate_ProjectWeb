@@ -4,8 +4,8 @@ import { Users, Activity, Building2, CreditCard, ArrowUpRight, ArrowDownRight, G
 import { centersApi, usersApi, subscriptionApi, adminApi } from '../services/api';
 
 // Tách ra ngoài để tránh re-define mỗi render (S6478)
-const StatCard = ({ title, value, subValue, icon: Icon, colorClass, trend }) => (
-  <div className="stat-card" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
+const StatCard = ({ title, value, subValue, icon: Icon, colorClass, trend, clickable }) => (
+  <div className={`stat-card ${clickable ? 'clickable' : ''}`} style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
       <div>
         <div className="stat-label" style={{ fontSize: '14px', fontWeight: 700, opacity: 0.8 }}>{title}</div>
@@ -146,7 +146,7 @@ const SuperAdminDashboard = () => {
         <StatCard title="Tổng người dùng" value={stats.totalUsers.toLocaleString()} subValue={`${stats.premiumUsers} Premium · ${stats.freeUsers} Free`} trend="up" icon={Users} colorClass="card-icon-blue" />
         <StatCard title="Đối tác B2B (Trung tâm)" value={stats.totalCenters} subValue={`${stats.b2bUsers} B2B · ${stats.b2cUsers} B2C`} trend="up" icon={Building2} colorClass="card-icon-purple" />
         <button style={{ all: 'unset', display: 'block', cursor: 'pointer', width: '100%' }} onClick={() => globalThis.location.href = '/admin/revenue'}>
-          <StatCard title="Doanh thu thực thu" value={stats.revenue > 0 ? `${(stats.revenue / 1_000_000).toFixed(1)}M ₫` : '—'} subValue="Xem chi tiết →" trend="up" icon={DollarSign} colorClass="card-icon-green" />
+          <StatCard title="Doanh thu thực thu" value={stats.revenue > 0 ? `${(stats.revenue / 1_000_000).toFixed(1)}M ₫` : '—'} subValue="Xem chi tiết →" trend="up" icon={DollarSign} colorClass="card-icon-green" clickable />
         </button>
         <StatCard title="Chuyển đổi Free → Paid" value={`${(stats.conversionRate || 0).toFixed(1)}%`} subValue={`Retention: ${(stats.retentionRate || 0).toFixed(1)}%`} trend="up" icon={Activity} colorClass="card-icon-yellow" />
       </div>
