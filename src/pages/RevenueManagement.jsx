@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  TrendingUp, ArrowUpRight, ArrowDownRight, FileText, Download,
+  TrendingUp, ArrowUpRight, ArrowDownRight, Download,
   Clock, CheckCircle2, Loader2, Landmark, Layers, Users
 } from 'lucide-react';
 import { subscriptionApi } from '../services/api';
@@ -11,6 +11,7 @@ const RevenueManagement = () => {
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState('30d');
   const [activeBarIndex, setActiveBarIndex] = useState(null);
+  const [txFilter, setTxFilter] = useState('all'); // all | active | expired
 
   const loadData = useCallback(async () => {
     try {
@@ -108,6 +109,10 @@ const RevenueManagement = () => {
         <button className="btn btn-primary" onClick={loadData}>Thử lại</button>
       </div>
     </div>
+  );
+
+  const filteredTx = transactions.filter(t =>
+    txFilter === 'all' ? true : txFilter === 'active' ? t.isActive : !t.isActive
   );
 
   return (
@@ -275,8 +280,19 @@ const RevenueManagement = () => {
         <div style={{ padding: '24px', borderBottom: '1.5px solid var(--gray-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>Giao dịch Gần nhất</h3>
           <div style={{ display: 'flex', gap: '8px' }}>
-             <button className="btn btn-outline btn-sm">Thành công</button>
-             <button className="btn btn-outline btn-sm">Chờ duyệt</button>
+             {[
+               { key: 'all', label: 'Tất cả' },
+               { key: 'active', label: 'Đang hoạt động' },
+               { key: 'expired', label: 'Hết hạn' },
+             ].map(f => (
+               <button
+                 key={f.key}
+                 className={`btn btn-sm ${txFilter === f.key ? 'btn-primary' : 'btn-outline'}`}
+                 onClick={() => setTxFilter(f.key)}
+               >
+                 {f.label}
+               </button>
+             ))}
           </div>
         </div>
         <table className="table">
@@ -287,12 +303,11 @@ const RevenueManagement = () => {
               <th>Loại</th>
               <th>Gói đăng ký</th>
               <th>Số tiền</th>
-              <th>Trạng thái</th>
-              <th style={{ textAlign: 'right', paddingRight: '24px' }}>Thao tác</th>
+              <th style={{ paddingRight: '24px' }}>Trạng thái</th>
             </tr>
           </thead>
           <tbody>
-            {(transactions.length > 0 ? transactions : []).map((t, i) => (
+            {filteredTx.map((t, i) => (
               <tr key={i}>
                 <td style={{ paddingLeft: '24px', fontWeight: 700, color: 'var(--gray-400)' }}>#{t.id || `TX${2000+i}`}</td>
                 <td style={{ fontWeight: 800 }}>{t.userFullName}</td>
@@ -309,11 +324,6 @@ const RevenueManagement = () => {
                       <Clock size={14} /> Hết hạn
                     </span>
                   )}
-                </td>
-                <td style={{ textAlign: 'right', paddingRight: '24px', whiteSpace: 'nowrap' }}>
-                  <button className="action-btn" title="Xem hóa đơn">
-                    <FileText size={14} />
-                  </button>
                 </td>
               </tr>
             ))}

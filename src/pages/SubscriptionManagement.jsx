@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Search, Loader2, ExternalLink, Clock, CheckCircle2, XCircle, DollarSign, TrendingUp, Users } from 'lucide-react';
+import { Calendar, Search, Loader2, Clock, CheckCircle2, XCircle, DollarSign, TrendingUp, Users } from 'lucide-react';
 import { subscriptionApi } from '../services/api';
 
 const SubscriptionManagement = () => {
@@ -132,7 +132,6 @@ const SubscriptionManagement = () => {
               <th>Giá tiền</th>
               <th>Thời hạn</th>
               <th>Trạng thái</th>
-              <th style={{ textAlign: 'right' }}>Chi tiết</th>
             </tr>
           </thead>
           <tbody>
@@ -172,16 +171,11 @@ const SubscriptionManagement = () => {
                     </span>
                   )}
                 </td>
-                <td style={{ textAlign: 'right' }}>
-                  <button className="btn btn-white btn-sm" style={{ padding: '8px' }}>
-                    <ExternalLink size={14} />
-                  </button>
-                </td>
               </tr>
             ))}
             {filteredSubs.length === 0 && (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', padding: '64px', color: 'var(--gray-400)' }}>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '64px', color: 'var(--gray-400)' }}>
                   <Clock size={32} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                   <div>Chưa có giao dịch hay gói dịch vụ nào.</div>
                 </td>

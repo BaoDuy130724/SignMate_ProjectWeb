@@ -8,6 +8,7 @@ const ContentManagement = () => {
   const [expandedCourse, setExpandedCourse] = useState(null);
   const [courseLessons, setCourseLessons] = useState({});
   const [loadingLessons, setLoadingLessons] = useState({});
+  const [levelFilter, setLevelFilter] = useState(''); // '' = tất cả
   
   // Modals / Forms
   const [showCourseModal, setShowCourseModal] = useState(false);
@@ -104,6 +105,8 @@ const ContentManagement = () => {
 
   if (loading) return <div style={{ padding: '100px', textAlign: 'center' }}><Loader2 className="spinning" /></div>;
 
+  const filteredCourses = levelFilter ? courses.filter(c => c.level === levelFilter) : courses;
+
   return (
     <>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -123,8 +126,19 @@ const ContentManagement = () => {
       <div className="table-wrapper">
         <div className="table-header">
           <div className="table-title">Cấu trúc Khóa học</div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-white btn-sm"><Filter size={14} /> Lọc theo Level</button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <Filter size={14} color="var(--gray-400)" />
+            <select
+              className="form-input"
+              style={{ width: 'auto', padding: '6px 12px', fontSize: '14px' }}
+              value={levelFilter}
+              onChange={e => setLevelFilter(e.target.value)}
+            >
+              <option value="">Tất cả Level</option>
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
           </div>
         </div>
 
@@ -140,7 +154,7 @@ const ContentManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {courses.map(course => (
+            {filteredCourses.map(course => (
               <React.Fragment key={course.id}>
                 <tr className={expandedCourse === course.id ? 'expanded' : ''}>
                   <td>
