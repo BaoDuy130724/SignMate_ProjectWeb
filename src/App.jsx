@@ -40,6 +40,7 @@ import CenterStudents from './pages/CenterStudents';
 import CenterSubscription from './pages/CenterSubscription';
 import CenterTeachers from './pages/CenterTeachers';
 import CenterReports from './pages/CenterReports';
+import CenterContent from './pages/CenterContent';
 
 import StudentAssignments from './pages/StudentAssignments';
 import StudentProgress from './pages/StudentProgress';
@@ -179,6 +180,7 @@ function App() {
         {/* ===== WEB 2: Center Admin Dashboard ===== */}
         <Route path="/center" element={guard('CenterAdmin', <CenterAdminDashboard />)} />
         <Route path="/center/classes" element={guard('CenterAdmin', <CenterClasses />)} />
+        <Route path="/center/content" element={guard('CenterAdmin', <CenterContent />)} />
         <Route path="/center/students" element={guard('CenterAdmin', <CenterStudents />)} />
         <Route path="/center/subscription" element={guard('CenterAdmin', <CenterSubscription />)} />
         <Route path="/center/teachers" element={guard('CenterAdmin', <CenterTeachers />)} />

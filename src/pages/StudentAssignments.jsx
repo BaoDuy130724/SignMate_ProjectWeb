@@ -4,7 +4,6 @@ import { dashboardApi, coursesApi } from '../services/api';
 
 const StudentAssignments = () => {
   const [assignments, setAssignments] = useState([]);
-  const [suggestedLesson, setSuggestedLesson] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,7 +17,6 @@ const StudentAssignments = () => {
         ]);
         const list = data?.deadlines || data?.assignments || [];
         setAssignments(list);
-        setSuggestedLesson(data?.suggestedLesson || null);
         setCourses(Array.isArray(courseData) ? courseData : []);
       } catch (err) {
         console.error('Failed to load assignments:', err);
@@ -74,10 +72,14 @@ const StudentAssignments = () => {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-title">Bài tập từ Giáo viên</h1>
-        <p className="page-subtitle">Hoàn thành các bài tập được giao để cải thiện điểm số và kỹ năng</p>
+        <h1 className="page-title">Bài học</h1>
+        <p className="page-subtitle">Các bài học bạn có thể luyện tập — mở ứng dụng SignMate để học cùng AI.</p>
       </div>
 
+      {/* Bài tập GV — chỉ hiện khi có (học viên B2B có lớp/GV); B2C không thấy phần này */}
+      {assignments.length > 0 && (
+        <h2 style={{ margin: '0 0 16px', fontSize: '18px' }}>Bài tập được giao</h2>
+      )}
       {/* Stats bar */}
       {assignments.length > 0 && (
         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
@@ -97,6 +99,7 @@ const StudentAssignments = () => {
       )}
 
       {/* Assignment cards */}
+      {assignments.length > 0 && (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
         {assignments.map(a => (
           <div key={a.id} className="card" style={{ 
@@ -148,23 +151,6 @@ const StudentAssignments = () => {
           </div>
         ))}
       </div>
-
-      {/* Empty state */}
-      {assignments.length === 0 && (
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div className="card" style={{ textAlign: 'center', padding: '60px 40px' }}>
-            <div style={{ 
-              width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 20px',
-              background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <BookOpen size={36} color="var(--primary)" />
-            </div>
-            <h3 style={{ color: 'var(--text-dark)', marginBottom: '8px' }}>Chưa có bài tập nào</h3>
-            <p style={{ color: 'var(--gray-400)', fontSize: '15px', maxWidth: '400px', margin: '0 auto' }}>
-              Giáo viên của bạn chưa giao bài tập nào. Khi có bài tập mới, chúng sẽ xuất hiện tại đây.
-            </p>
-          </div>
-        </div>
       )}
 
       {/* Khóa học có sẵn (BE đã lọc theo center: B2C chỉ khóa chung; B2B + khóa trung tâm) */}

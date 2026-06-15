@@ -57,6 +57,7 @@ const Sidebar = ({ role }) => {
               label: 'Quản lý',
               links: [
                 { to: '/center/classes', icon: <GraduationCap size={20} />, label: 'Lớp học' },
+                { to: '/center/content', icon: <BookOpen size={20} />, label: 'Nội dung khóa học' },
                 { to: '/center/students', icon: <UserPlus size={20} />, label: 'Học viên' },
                 { to: '/center/teachers', icon: <Users size={20} />, label: 'Giáo viên' },
                 { to: '/center/subscription', icon: <CreditCard size={20} />, label: 'Gói dịch vụ' },
@@ -101,7 +102,7 @@ const Sidebar = ({ role }) => {
             {
               label: 'Học tập',
               links: [
-                { to: '/student/assignments', icon: <Layers size={20} />, label: 'Bài tập từ GV' },
+                { to: '/student/assignments', icon: <Layers size={20} />, label: 'Bài học' },
                 { to: '/student/progress', icon: <TrendingUp size={20} />, label: 'Kết quả luyện tập' },
               ]
             },
