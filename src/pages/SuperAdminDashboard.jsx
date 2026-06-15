@@ -146,7 +146,7 @@ const SuperAdminDashboard = () => {
         <StatCard title="Tổng người dùng" value={stats.totalUsers.toLocaleString()} subValue={`${stats.premiumUsers} Premium · ${stats.freeUsers} Free`} trend="up" icon={Users} colorClass="card-icon-blue" />
         <StatCard title="Đối tác B2B (Trung tâm)" value={stats.totalCenters} subValue={`${stats.b2bUsers} B2B · ${stats.b2cUsers} B2C`} trend="up" icon={Building2} colorClass="card-icon-purple" />
         <button style={{ all: 'unset', display: 'block', cursor: 'pointer', width: '100%' }} onClick={() => globalThis.location.href = '/admin/revenue'}>
-          <StatCard title="Doanh thu thực thu" value={stats.revenue > 0 ? `${(stats.revenue / 1_000_000).toFixed(1)}M ₫` : '—'} subValue="Xem chi tiết →" trend="up" icon={DollarSign} colorClass="card-icon-green" clickable />
+          <StatCard title="Doanh thu thực thu" value={stats.revenue > 0 ? `${stats.revenue.toLocaleString('vi-VN')} ₫` : '—'} subValue="Xem chi tiết →" trend="up" icon={DollarSign} colorClass="card-icon-green" clickable />
         </button>
         <StatCard title="Chuyển đổi Free → Paid" value={`${(stats.conversionRate || 0).toFixed(1)}%`} subValue={`Retention: ${(stats.retentionRate || 0).toFixed(1)}%`} trend="up" icon={Activity} colorClass="card-icon-yellow" />
       </div>
