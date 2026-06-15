@@ -437,6 +437,8 @@ export const subscriptionApi = {
   upgrade: (planId, returnUrl) =>
     post('/subscription/subscribe', { planId, returnUrl }),
 
+  verifyPayment: (orderCode) => post(`/subscription/verify-payment?orderCode=${orderCode}`),
+
   getAll: () => get('/subscription/all'),
 
   createPlan: (data) => post('/plans', data),

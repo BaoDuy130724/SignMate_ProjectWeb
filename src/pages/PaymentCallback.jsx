@@ -60,6 +60,18 @@ const PaymentCallback = () => {
       }
 
       setMessage('Đang xác nhận giao dịch với máy chủ...');
+      
+      // Kích hoạt thủ công qua API verify (cứu cánh cho test localhost khi webhook không tới)
+      const orderCode = params.get('orderCode');
+      if (orderCode) {
+        try {
+          await subscriptionApi.verifyPayment(orderCode);
+        } catch (err) {
+          // Bỏ qua lỗi nếu backend báo lỗi, vì có thể webhook đã xử lý xong rồi
+          console.warn('Verify payment failed (might be processed already):', err);
+        }
+      }
+
       const confirmed = await confirmWithServer();
       if (cancelled) return;
 
