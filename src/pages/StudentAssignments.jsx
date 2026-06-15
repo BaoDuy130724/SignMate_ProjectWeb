@@ -97,7 +97,7 @@ const StudentAssignments = () => {
                    </span>
                  ) : (
                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                     <button className="btn btn-primary btn-sm">
+                     <button className="btn btn-primary btn-sm" onClick={() => window.location.href = '/student/mobile'}>
                        <PlayCircle size={16} style={{ marginRight: '6px' }} /> Luyện tập
                      </button>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--gray-400)' }}>

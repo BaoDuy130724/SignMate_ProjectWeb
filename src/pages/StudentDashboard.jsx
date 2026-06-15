@@ -226,7 +226,7 @@ const StudentDashboard = () => {
            <p style={{ color: 'var(--gray-400)', fontSize: '15px' }}>
              Bạn đang đi đúng hướng! Hoàn thành thêm <strong>{stats?.totalLessons - stats?.lessonsCompleted || 0} bài</strong> nữa để thăng hạng nhé.
            </p>
-           <button className="btn btn-primary" style={{ marginTop: '20px', padding: '12px 32px' }}>
+           <button className="btn btn-primary" style={{ marginTop: '20px', padding: '12px 32px' }} onClick={() => window.location.href = '/student/mobile'}>
              <PlayCircle size={18} style={{ marginRight: '8px' }} /> Tiếp tục bài học cuối
            </button>
         </div>
