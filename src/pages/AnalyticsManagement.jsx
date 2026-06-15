@@ -58,7 +58,7 @@ const AnalyticsManagement = () => {
     totalCenters: data?.totalCenters || 0,
     totalSuccessfulAttempts: data?.totalSuccessfulAttempts || 0,
     averageAccuracy: data?.averageAccuracy || 0,
-    b2bUsers: data?.b2bUsers || 0,
+    b2bUsers: data?.b2bUsers || data?.b2BUsers || 0,
     activeUsersLast30Days: data?.activeUsersLast30Days || 0,
     sessionGrowthPercent: data?.sessionGrowthPercent ?? 0,
     sessionsToday: data?.sessionsToday || 0,
