@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, Loader2, Users, Target, BookOpen, Download, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react';
 import { teacherApi, trackingApi } from '../services/api';
+import { exportReportPdf } from '../utils/exportPdf';
 
 const TeacherReports = () => {
   const [classes, setClasses] = useState([]);
@@ -51,14 +52,39 @@ const TeacherReports = () => {
     await loadClassStats(cls.id);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     setExporting(true);
     setSuccess('');
-    setTimeout(() => {
-      setExporting(false);
+    try {
+      await exportReportPdf({
+        title: `Báo cáo lớp ${activeClass.name}`,
+        subtitle: 'Kết quả rèn luyện chi tiết của học viên',
+        fileName: `bao-cao-${activeClass.name}.pdf`,
+        summary: [
+          { label: 'Học viên trong lớp', value: activeClass.studentCount },
+          { label: 'Độ chính xác trung bình', value: `${avgAccuracy}%` },
+          { label: 'Số chuyên đề còn yếu', value: weakTopicsSorted.length },
+        ],
+        tables: [
+          {
+            heading: 'Hiệu năng học viên',
+            columns: ['Học viên', 'Độ chính xác', 'Buổi/tuần'],
+            rows: students.map(s => [s.fullName, `${s.accuracyPercent.toFixed(1)}%`, s.practiceFrequencyDays]),
+          },
+          ...(weakTopicsSorted.length > 0 ? [{
+            heading: 'Chuyên đề yếu của lớp',
+            columns: ['Chuyên đề'],
+            rows: weakTopicsSorted.map(t => [t]),
+          }] : []),
+        ],
+      });
       setSuccess('Xuất báo cáo PDF lớp ' + activeClass.name + ' thành công! 📄');
       setTimeout(() => setSuccess(''), 3000);
-    }, 1500);
+    } catch (err) {
+      setError(err.message || 'Lỗi xuất báo cáo PDF.');
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (loading && !activeClass) {

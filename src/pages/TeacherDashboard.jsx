@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Target, BookOpen, FileText, Download, Loader2, MessageSquare, Plus, Trash2, Edit, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { progressApi, teacherApi } from '../services/api';
+import { exportReportPdf } from '../utils/exportPdf';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
@@ -19,11 +20,45 @@ const TeacherDashboard = () => {
   const [loadingComments, setLoadingComments] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [toast, setToast] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   }, []);
+
+  const handleExportPdf = async () => {
+    if (!activeClass) return;
+    setExporting(true);
+    try {
+      const avg = students.length
+        ? students.reduce((a, s) => a + s.accuracyPercent, 0) / students.length
+        : 0;
+      await exportReportPdf({
+        title: `Tiến độ lớp ${activeClass.name}`,
+        subtitle: 'Báo cáo tiến độ và năng lực học viên',
+        fileName: `tien-do-${activeClass.name}.pdf`,
+        summary: [
+          { label: 'Sĩ số', value: activeClass.studentCount },
+          { label: 'Độ chính xác trung bình', value: `${avg.toFixed(1)}%` },
+        ],
+        tables: [{
+          heading: 'Chi tiết học viên',
+          columns: ['Học viên', 'Accuracy', 'Buổi/tuần', 'Chủ đề yếu'],
+          rows: students.map(s => [
+            s.fullName,
+            `${s.accuracyPercent.toFixed(1)}%`,
+            s.practiceFrequencyDays,
+            s.weakTopics?.join(', ') || 'Không có',
+          ]),
+        }],
+      });
+    } catch (err) {
+      showToast(err.message || 'Lỗi xuất báo cáo.', 'error');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -195,7 +230,9 @@ const TeacherDashboard = () => {
           <div className="table-title">Tiến độ Học viên</div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn btn-primary btn-sm" onClick={() => navigate('/teacher/assign')}>Giao bài mới</button>
-            <button className="btn btn-outline btn-sm"><Download size={16} /> Xuất PDF</button>
+            <button className="btn btn-outline btn-sm" onClick={handleExportPdf} disabled={exporting || students.length === 0}>
+              {exporting ? <Loader2 size={16} className="spinning" /> : <><Download size={16} /> Xuất PDF</>}
+            </button>
           </div>
         </div>
         {loading ? (
@@ -260,7 +297,9 @@ const TeacherDashboard = () => {
             Hệ thống tự động phân tích hành vi và điểm số của {activeClass.studentCount} học viên
           </p>
         </div>
-        <button className="btn btn-blue btn-sm"><Download size={16} /> Export PDF</button>
+        <button className="btn btn-blue btn-sm" onClick={handleExportPdf} disabled={exporting || students.length === 0}>
+          {exporting ? <Loader2 size={16} className="spinning" /> : <><Download size={16} /> Export PDF</>}
+        </button>
       </div>
 
       {/* Toast Notification */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Activity, Download, Loader2, ArrowUpRight, ArrowDownRight, Building2 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
+import { exportReportPdf } from '../utils/exportPdf';
 
 const AnalyticsManagement = () => {
   const [data, setData] = useState(null);
@@ -8,6 +9,7 @@ const AnalyticsManagement = () => {
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('30d');
   const [activeBarIndex, setActiveBarIndex] = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -71,6 +73,42 @@ const AnalyticsManagement = () => {
 
   const growthPositive = safeData.sessionGrowthPercent >= 0;
 
+  const handleExportPdf = async () => {
+    setExporting(true);
+    try {
+      await exportReportPdf({
+        title: 'Báo cáo Phân tích Hệ thống',
+        subtitle: 'Dữ liệu tăng trưởng và hiệu quả đào tạo toàn nền tảng',
+        fileName: 'bao-cao-phan-tich.pdf',
+        summary: [
+          { label: 'Tổng người dùng', value: safeData.totalUsers },
+          { label: 'Người dùng B2B', value: safeData.b2bUsers },
+          { label: 'Tổng trung tâm', value: safeData.totalCenters },
+          { label: 'Tổng phiên luyện tập', value: safeData.totalPracticeSessions },
+          { label: 'Lượt chấm thành công', value: safeData.totalSuccessfulAttempts },
+          { label: 'Độ chính xác trung bình', value: `${safeData.averageAccuracy.toFixed(1)}%` },
+          { label: 'Người hoạt động (30 ngày)', value: safeData.activeUsersLast30Days },
+          { label: 'Tăng trưởng phiên', value: `${safeData.sessionGrowthPercent.toFixed(1)}%` },
+          { label: 'Hôm nay (phiên / lượt chấm / HV)', value: `${safeData.sessionsToday} / ${safeData.attemptsToday} / ${safeData.activeUsersToday}` },
+        ],
+        tables: safeData.topCourses.length > 0 ? [{
+          heading: 'Khóa học nổi bật',
+          columns: ['Khóa học', 'Lượt đăng ký', 'Mới (30 ngày)', 'Tỷ lệ hoàn thành'],
+          rows: safeData.topCourses.map(c => [
+            c.name || c.Name || '',
+            c.enrollments ?? c.Enrollments ?? 0,
+            c.newEnrollmentsLast30Days ?? c.NewEnrollmentsLast30Days ?? 0,
+            `${c.completionRate ?? c.CompletionRate ?? 0}%`,
+          ]),
+        }] : [],
+      });
+    } catch (err) {
+      setError(err.message || 'Lỗi xuất báo cáo.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Tính max value cho biểu đồ
   const maxGrowthValue = safeData.userGrowth.length > 0 
     ? Math.max(...safeData.userGrowth.map(d => d.Value || d.value || 0)) 
@@ -91,7 +129,9 @@ const AnalyticsManagement = () => {
             <option value="30d">30 ngày qua</option>
             <option value="90d">Quý này</option>
           </select>
-          <button className="btn btn-white btn-sm" style={{ padding: '8px 16px' }}><Download size={16} /> Xuất báo cáo</button>
+          <button className="btn btn-white btn-sm" style={{ padding: '8px 16px' }} onClick={handleExportPdf} disabled={exporting}>
+            {exporting ? <Loader2 size={16} className="spinning" /> : <><Download size={16} /> Xuất báo cáo</>}
+          </button>
         </div>
       </div>
 

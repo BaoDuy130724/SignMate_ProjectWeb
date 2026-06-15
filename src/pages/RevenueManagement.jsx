@@ -4,6 +4,7 @@ import {
   Clock, CheckCircle2, Loader2, Landmark, Layers, Users
 } from 'lucide-react';
 import { subscriptionApi } from '../services/api';
+import { exportReportPdf } from '../utils/exportPdf';
 
 const RevenueManagement = () => {
   const [transactions, setTransactions] = useState([]);
@@ -12,6 +13,7 @@ const RevenueManagement = () => {
   const [timeRange, setTimeRange] = useState('30d');
   const [activeBarIndex, setActiveBarIndex] = useState(null);
   const [txFilter, setTxFilter] = useState('all'); // all | active | expired
+  const [exporting, setExporting] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -115,6 +117,48 @@ const RevenueManagement = () => {
     txFilter === 'all' ? true : txFilter === 'active' ? t.isActive : !t.isActive
   );
 
+  const handleExportPdf = async () => {
+    setExporting(true);
+    try {
+      const vnd = (n) => `${(n || 0).toLocaleString('vi-VN')}đ`;
+      await exportReportPdf({
+        title: 'Báo cáo Tài chính',
+        subtitle: 'Doanh thu B2B/B2C và giao dịch gói đăng ký',
+        fileName: 'bao-cao-tai-chinh.pdf',
+        summary: [
+          { label: 'Tổng doanh thu (MRR ước tính)', value: vnd(totalRevenue) },
+          { label: `Doanh thu B2B (${b2bPercent}%)`, value: vnd(b2bRevenue) },
+          { label: `Doanh thu B2C (${b2cPercent}%)`, value: vnd(b2cRevenue) },
+          { label: 'Doanh thu TB / khách (ARPU)', value: vnd(arpu) },
+          { label: 'Số giao dịch', value: transactions.length },
+          { label: 'Tăng trưởng tháng này', value: fmtTrend(totalTrend) },
+        ],
+        tables: [
+          {
+            heading: 'Doanh thu 6 tháng gần nhất',
+            columns: ['Tháng', 'Tổng', 'B2B', 'B2C'],
+            rows: monthlySeries.map(m => [m.label, vnd(m.total), vnd(m.b2b), vnd(m.b2c)]),
+          },
+          {
+            heading: 'Giao dịch',
+            columns: ['Khách hàng', 'Loại', 'Gói', 'Số tiền', 'Trạng thái'],
+            rows: filteredTx.map(t => [
+              t.userFullName || '',
+              isB2B(t) ? 'B2B' : 'B2C',
+              t.planName || '',
+              vnd(t.priceVnd),
+              t.isActive ? 'Hoạt động' : 'Hết hạn',
+            ]),
+          },
+        ],
+      });
+    } catch (err) {
+      setError(err.message || 'Lỗi xuất báo cáo.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -128,7 +172,9 @@ const RevenueManagement = () => {
             <option value="90d">Quý này</option>
             <option value="ytd">Năm nay</option>
           </select>
-          <button className="btn btn-primary"><Download size={16} /> Xuất tài chính</button>
+          <button className="btn btn-primary" onClick={handleExportPdf} disabled={exporting}>
+            {exporting ? <Loader2 size={16} className="spinning" /> : <><Download size={16} /> Xuất tài chính</>}
+          </button>
         </div>
       </div>
 
