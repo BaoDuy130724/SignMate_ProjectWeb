@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import logoImg from '../assets/EXE201/logo.02-04.png';
 import { 
   LayoutDashboard, Users, Building2, CreditCard, BookOpen, BarChart3, LogOut,
   GraduationCap, UserPlus, ClipboardList,
@@ -122,7 +123,9 @@ const Sidebar = ({ role }) => {
 
   return (
     <div className="sidebar">
-      <div className="sidebar-logo">SignMate</div>
+      <div className="sidebar-logo">
+        <img src={logoImg} alt="SignMate" />
+      </div>
       <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--gray-300)', padding: '0 12px 12px', textTransform: 'uppercase', letterSpacing: '1.5px', borderBottom: '2px solid var(--gray-100)', marginBottom: '8px' }}>
         {config.title}
       </div>

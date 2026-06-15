@@ -1,4 +1,5 @@
 import React from 'react';
+import logoImg from '../assets/EXE201/logo.02-04.png';
 
 const Footer = () => {
   return (
@@ -6,7 +7,9 @@ const Footer = () => {
       <div className="container">
         <div className="footer-grid">
           <div>
-            <div className="footer-logo">SignMate</div>
+            <div className="footer-logo">
+              <img src={logoImg} alt="SignMate" />
+            </div>
             <p className="footer-desc">
               Nền tảng học ngôn ngữ ký hiệu với AI Corrective Feedback. 
               Giúp người học nhận diện đúng - sai và cải thiện kỹ năng mỗi ngày.

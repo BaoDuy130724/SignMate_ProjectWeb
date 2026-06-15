@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { LogIn, AlertCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../services/api';
+import logoImg from '../assets/EXE201/logo.02-04.png';
 
 const LoginPage = ({ setRole }) => {
   const navigate = useNavigate();
@@ -86,8 +87,8 @@ const LoginPage = ({ setRole }) => {
             <ArrowLeft size={16} /> Về trang chủ
           </Link>
         </div>
-        <div style={{ fontSize: '36px', fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>
-          SignMate
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+          <img src={logoImg} alt="SignMate" style={{ maxHeight: '60px', objectFit: 'contain' }} />
         </div>
         <p style={{ color: 'var(--gray-400)', fontSize: '16px', marginBottom: '24px' }}>
           Đăng nhập vào hệ thống quản lý

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, AlertCircle, ArrowLeft, Mail, Lock, User, KeyRound, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../services/api';
+import logoImg from '../assets/EXE201/logo.02-04.png';
 
 const RegisterPage = ({ setRole }) => {
   const navigate = useNavigate();
@@ -105,8 +106,8 @@ const RegisterPage = ({ setRole }) => {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '36px', fontWeight: 900, color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '1px' }}>
-            SignMate
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <img src={logoImg} alt="SignMate" style={{ maxHeight: '60px', objectFit: 'contain' }} />
           </div>
           <p style={{ color: 'var(--gray-400)', fontSize: '16px', margin: 0 }}>
             {step === 1 ? 'Tạo tài khoản mới' : 'Xác thực email của bạn'}

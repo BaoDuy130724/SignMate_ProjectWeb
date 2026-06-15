@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { User, LogOut, Layout, LogIn, UserPlus } from 'lucide-react';
+import { User, LogOut, Layout, KeyRound, UserPlus } from 'lucide-react';
+import logoImg from '../assets/EXE201/logo.02-04.png';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -28,7 +29,9 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <Link to="/" className="navbar-logo">SignMate</Link>
+        <Link to="/" className="navbar-logo">
+          <img src={logoImg} alt="SignMate" />
+        </Link>
         
         <div className="navbar-links">
           <NavLink to="/" className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`} end>
@@ -62,7 +65,7 @@ const Navbar = () => {
           ) : (
             <>
               <Link to="/login" className="btn btn-outline btn-sm" title="Đăng nhập" style={{ padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <LogIn size={18} />
+                <KeyRound size={18} />
               </Link>
               <Link to="/register" className="btn btn-primary btn-sm" title="Đăng ký" style={{ padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                 <UserPlus size={18} />
