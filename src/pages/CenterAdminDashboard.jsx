@@ -937,7 +937,7 @@ const CenterAdminDashboard = () => {
             }}></div>
           </div>
         </div>
-        <button className="btn btn-blue btn-sm">Gia hạn / Nâng cấp gói</button>
+        <button className="btn btn-blue btn-sm" onClick={() => window.location.href = '/center/subscription'}>Gia hạn / Nâng cấp gói</button>
       </div>
 
       {/* Inline CSS for animations */}

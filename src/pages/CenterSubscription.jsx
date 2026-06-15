@@ -8,8 +8,29 @@ const CenterSubscription = () => {
   const [b2bPlan, setB2bPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [subscribing, setSubscribing] = useState(false);
 
   const centerId = localStorage.getItem('centerId');
+
+  // Mua thêm/gia hạn = thanh toán gói B2B qua PayOS (cùng luồng PricingPage).
+  const handleBuySeats = async () => {
+    if (!b2bPlan) return;
+    try {
+      setSubscribing(true);
+      const returnUrl = `${window.location.origin}/payment-callback`;
+      const res = await subscriptionApi.upgrade(b2bPlan.id, returnUrl);
+      if (res.paymentUrl) {
+        localStorage.setItem('pendingPlanId', String(b2bPlan.id));
+        window.location.href = res.paymentUrl;
+      } else if (res.success) {
+        await loadData();
+      }
+    } catch (err) {
+      setError(err.message || 'Không thể khởi tạo thanh toán');
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -152,8 +173,15 @@ const CenterSubscription = () => {
                  ))}
               </ul>
 
-              <button className="btn btn-primary" style={{ width: '100%', background: 'var(--yellow)', color: 'var(--text-dark)', fontWeight: 800, border: 'none' }}>
-                Mua thêm seats <ArrowUpRight size={18} />
+              <button
+                className="btn btn-primary"
+                style={{ width: '100%', background: 'var(--yellow)', color: 'var(--text-dark)', fontWeight: 800, border: 'none' }}
+                onClick={handleBuySeats}
+                disabled={subscribing || !b2bPlan}
+              >
+                {subscribing
+                  ? <><Loader2 size={18} className="spinning" /> Đang chuyển tới thanh toán...</>
+                  : <>Mua thêm seats <ArrowUpRight size={18} /></>}
               </button>
            </div>
 
