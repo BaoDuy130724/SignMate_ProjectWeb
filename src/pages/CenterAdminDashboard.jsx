@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, Activity, Target, GraduationCap, CreditCard, Loader2, Plus, X, BookOpen, UserPlus, CheckCircle2, AlertCircle, Eye, EyeOff, UserCheck, Edit, Trash2 } from 'lucide-react';
-import { centersApi, classesApi } from '../services/api';
+import { Users, Activity, Target, GraduationCap, CreditCard, Loader2, Plus, X, BookOpen, UserPlus, CheckCircle2, AlertCircle, Eye, EyeOff, UserCheck, Edit, Trash2, Layers, PlayCircle } from 'lucide-react';
+import { centersApi, classesApi, coursesApi } from '../services/api';
 
 // ===== Toast Notification =====
 const Toast = ({ message, type, onClose }) => {
@@ -238,6 +238,109 @@ const AddStudentsModal = ({ visible, onClose, centerId, classId, className: clsN
   );
 };
 
+// ===== Assign Lesson Modal (giao bài cho lớp) =====
+const AssignLessonsModal = ({ visible, onClose, centerId, classId, className: clsName, showToast }) => {
+  const [courses, setCourses] = useState([]);
+  const [lessons, setLessons] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedLesson, setSelectedLesson] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setLoading(true);
+    setSelectedCourse('');
+    setSelectedLesson('');
+    setLessons([]);
+    const load = async () => {
+      try {
+        const data = await coursesApi.getAll(undefined, undefined, true);
+        setCourses(data || []);
+      } catch {
+        showToast('Lỗi tải khóa học', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [visible, showToast]);
+
+  if (!visible) return null;
+
+  const handleCourseChange = async (courseId) => {
+    setSelectedCourse(courseId);
+    setSelectedLesson('');
+    if (!courseId) { setLessons([]); return; }
+    try {
+      const data = await coursesApi.getLessons(courseId);
+      setLessons(data || []);
+    } catch {
+      showToast('Lỗi tải bài học', 'error');
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!selectedLesson) return;
+    setSubmitting(true);
+    try {
+      await classesApi.assignLesson(centerId, classId, selectedLesson);
+      showToast('Đã giao bài tập thành công! 📝');
+      onClose();
+    } catch (err) {
+      showToast('Lỗi: ' + err.message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(26,18,37,0.5)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={onClose}>
+      <div className="card" style={{ width: '100%', maxWidth: '480px', boxShadow: '0 32px 64px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Giao Bài Tập</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--gray-400)' }}>Lớp: <strong>{clsName}</strong></p>
+          </div>
+          <button onClick={onClose} style={{ background: 'var(--gray-50)', border: 'none', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px' }}><X size={18} /></button>
+        </div>
+
+        {loading ? <div style={{ textAlign: 'center', padding: '40px' }}><Loader2 className="spinning" /></div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="form-group">
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Layers size={16} /> Chọn Khóa học
+              </label>
+              <select className="form-input" value={selectedCourse} onChange={e => handleCourseChange(e.target.value)}>
+                <option value="">-- Chọn Khóa học --</option>
+                {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <PlayCircle size={16} /> Chọn Bài học cụ thể
+              </label>
+              <select className="form-input" value={selectedLesson} onChange={e => setSelectedLesson(e.target.value)} disabled={!selectedCourse}>
+                <option value="">-- Chọn bài học --</option>
+                {lessons.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button className="btn btn-white" onClick={onClose}>Hủy</button>
+              <button className="btn btn-primary" onClick={handleAssign} disabled={!selectedLesson || submitting}>
+                {submitting ? <Loader2 className="spinning" size={16} /> : <CheckCircle2 size={16} />}
+                {submitting ? ' Đang lưu...' : ' Xác nhận giao bài'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const CenterAdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [classes, setClasses] = useState([]);
@@ -267,6 +370,7 @@ const CenterAdminDashboard = () => {
 
   // Add students modal
   const [addStudentModal, setAddStudentModal] = useState({ visible: false, classId: '', className: '' });
+  const [assignLessonModal, setAssignLessonModal] = useState({ visible: false, classId: '', className: '' });
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [editingStudent, setEditingStudent] = useState(null);
   const [editingClass, setEditingClass] = useState(null);
@@ -550,6 +654,16 @@ const CenterAdminDashboard = () => {
         onSuccess={async () => {
           setClasses(await classesApi.getAll(centerId));
         }}
+        showToast={showToast}
+      />
+
+      {/* Assign Lesson Modal */}
+      <AssignLessonsModal
+        visible={assignLessonModal.visible}
+        centerId={centerId}
+        classId={assignLessonModal.classId}
+        className={assignLessonModal.className}
+        onClose={() => setAssignLessonModal({ visible: false, classId: '', className: '' })}
         showToast={showToast}
       />
 
