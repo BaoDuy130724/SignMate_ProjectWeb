@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Calendar, CheckCircle2, ChevronRight, PlayCircle, Smartphone, BookOpen, Loader2, Sparkles, Clock } from 'lucide-react';
-import { dashboardApi } from '../services/api';
+import { Layers, Calendar, CheckCircle2, ChevronRight, PlayCircle, Smartphone, BookOpen, Loader2, Sparkles, Clock, Building2, Globe } from 'lucide-react';
+import { dashboardApi, coursesApi } from '../services/api';
 
 const StudentAssignments = () => {
   const [assignments, setAssignments] = useState([]);
   const [suggestedLesson, setSuggestedLesson] = useState(null);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await dashboardApi.getOverview();
+        const [data, courseData] = await Promise.all([
+          dashboardApi.getOverview(),
+          // BE đã lọc theo center: B2C chỉ nhận khóa chung; B2B nhận thêm khóa của trung tâm.
+          coursesApi.getAll().catch(() => []),
+        ]);
         const list = data?.deadlines || data?.assignments || [];
         setAssignments(list);
         setSuggestedLesson(data?.suggestedLesson || null);
+        setCourses(Array.isArray(courseData) ? courseData : []);
       } catch (err) {
         console.error('Failed to load assignments:', err);
         setAssignments([]);
@@ -33,6 +39,37 @@ const StudentAssignments = () => {
 
   const pendingCount = assignments.filter(a => a.status !== 'Completed').length;
   const completedCount = assignments.filter(a => a.status === 'Completed').length;
+
+  const courseLevelVi = (lvl) =>
+    ({ Beginner: 'Người mới', Intermediate: 'Trung cấp', Advanced: 'Nâng cao' }[lvl] || lvl);
+
+  const renderCourseGroup = (title, IconCmp, list, accent) => (
+    <div style={{ marginBottom: '28px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+        <IconCmp size={18} color={accent} />
+        <h2 style={{ margin: 0, fontSize: '18px' }}>{title}</h2>
+        <span className="badge badge-gray">{list.length}</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        {list.map(c => (
+          <div key={c.id} className="card" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0, background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BookOpen size={24} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: '15px' }}>{c.title}</h3>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--gray-400)' }}>
+                {c.lessonCount} bài học • {courseLevelVi(c.level)}
+              </p>
+            </div>
+            <button className="btn btn-outline btn-sm" style={{ flexShrink: 0 }} onClick={() => window.location.href = '/student/mobile'}>
+              <PlayCircle size={15} style={{ marginRight: '4px' }} /> Học trên app
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -129,6 +166,27 @@ const StudentAssignments = () => {
           </div>
         </div>
       )}
+
+      {/* Khóa học có sẵn (BE đã lọc theo center: B2C chỉ khóa chung; B2B + khóa trung tâm) */}
+      {courses.length > 0 && (() => {
+        const centerCourses = courses.filter(c => c.centerId);
+        const generalCourses = courses.filter(c => !c.centerId);
+        return (
+          <div style={{ marginTop: '40px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <Sparkles size={20} color="var(--primary)" />
+              <h1 style={{ margin: 0, fontSize: '22px' }}>Khóa học bạn có thể học</h1>
+            </div>
+            <p style={{ margin: '0 0 24px', color: 'var(--gray-400)', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Smartphone size={15} /> Mở ứng dụng di động SignMate để luyện tập cùng AI.
+            </p>
+            {centerCourses.length > 0 &&
+              renderCourseGroup('Khóa học của Trung tâm bạn', Building2, centerCourses, 'var(--primary)')}
+            {generalCourses.length > 0 &&
+              renderCourseGroup(centerCourses.length > 0 ? 'Khóa học chung' : 'Tất cả khóa học', Globe, generalCourses, 'var(--blue)')}
+          </div>
+        );
+      })()}
 
       <style>{`
         .spinning { animation: spin 2s linear infinite; }
