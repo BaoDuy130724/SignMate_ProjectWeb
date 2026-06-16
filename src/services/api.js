@@ -476,9 +476,6 @@ export const teacherApi = {
 // VOCABULARY  (api/vocabulary)  — AI reference data management
 // ============================
 export const vocabularyApi = {
-  // body: SetReferenceRequest (signId, keypoints, ...)
-  setReference: (data) => post('/vocabulary/set-reference', data),
-
   // multipart upload of a reference video → background keypoint extraction
   uploadReference: (signId, videoFile) => {
     const fd = new FormData();
