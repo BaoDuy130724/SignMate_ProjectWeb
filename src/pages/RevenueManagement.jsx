@@ -68,6 +68,21 @@ const RevenueManagement = () => {
   });
   const maxMonthVal = Math.max(1, ...monthlySeries.map(m => Math.max(m.b2b, m.b2c)));
 
+  const nRev = monthlySeries.length;
+  const getXRev = (i) => nRev > 1 ? (i / (nRev - 1)) * 600 : 300;
+  const polyPointsB2b = monthlySeries.map((d, i) => {
+    const x = getXRev(i);
+    const y = 170 - (d.b2b / Math.max(1, maxMonthVal)) * 150;
+    return `${x},${y}`;
+  }).join(' ');
+  const polyPointsB2c = monthlySeries.map((d, i) => {
+    const x = getXRev(i);
+    const y = 170 - (d.b2c / Math.max(1, maxMonthVal)) * 150;
+    return `${x},${y}`;
+  }).join(' ');
+  const polyGradB2b = nRev > 1 ? `0,170 ${polyPointsB2b} 600,170` : `300,170 ${polyPointsB2b} 300,170`;
+  const polyGradB2c = nRev > 1 ? `0,170 ${polyPointsB2c} 600,170` : `300,170 ${polyPointsB2c} 300,170`;
+
   // Tăng trưởng tháng này so với tháng trước (số thật, không hardcode).
   const curMb = monthBuckets[monthBuckets.length - 1];
   const prevMb = monthBuckets[monthBuckets.length - 2];
@@ -198,66 +213,138 @@ const RevenueManagement = () => {
              </div>
           </div>
           
-          <div style={{ height: '200px', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '16px', borderBottom: '1px solid var(--gray-100)', paddingBottom: '8px', zIndex: 1 }}>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none', zIndex: 0 }}>
-              <div style={{ borderBottom: '1px dashed var(--gray-50)', height: 0, width: '100%' }}></div>
-              <div style={{ borderBottom: '1px dashed var(--gray-50)', height: 0, width: '100%' }}></div>
-              <div style={{ borderBottom: '1px dashed var(--gray-50)', height: 0, width: '100%' }}></div>
-              <div style={{ borderBottom: '1px dashed var(--gray-50)', height: 0, width: '100%' }}></div>
-            </div>
+          <div style={{ height: '200px', position: 'relative', borderBottom: '1px solid var(--gray-100)', paddingBottom: '8px', zIndex: 1 }}>
+            <svg viewBox="0 0 600 200" width="100%" height="100%" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+              <defs>
+                <linearGradient id="b2bGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="b2cGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--blue)" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="var(--blue)" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
 
-            {monthlySeries.map((d, i) => {
-              const b2bHeight = (d.b2b / maxMonthVal) * 100;
-              const b2cHeight = (d.b2c / maxMonthVal) * 100;
-              return (
-                <div key={i} style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '4px', zIndex: 1 }}
-                  onMouseEnter={() => setActiveBarIndex(i)}
-                  onMouseLeave={() => setActiveBarIndex(null)}>
+              {/* Grid Lines */}
+              <line x1="0" y1="20" x2="600" y2="20" stroke="var(--gray-50)" strokeDasharray="4 4" />
+              <line x1="0" y1="70" x2="600" y2="70" stroke="var(--gray-50)" strokeDasharray="4 4" />
+              <line x1="0" y1="120" x2="600" y2="120" stroke="var(--gray-50)" strokeDasharray="4 4" />
+              <line x1="0" y1="170" x2="600" y2="170" stroke="var(--gray-200)" strokeWidth="1" />
 
+              {/* Shaded Areas */}
+              <polygon points={polyGradB2b} fill="url(#b2bGrad)" />
+              <polygon points={polyGradB2c} fill="url(#b2cGrad)" />
+
+              {/* Polylines */}
+              <polyline
+                points={polyPointsB2b}
+                fill="none"
+                stroke="var(--primary)"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <polyline
+                points={polyPointsB2c}
+                fill="none"
+                stroke="var(--blue)"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Hover highlight line & circles */}
+              {activeBarIndex !== null && (
+                <>
+                  <line
+                    x1={getXRev(activeBarIndex)}
+                    y1="10"
+                    x2={getXRev(activeBarIndex)}
+                    y2="170"
+                    stroke="var(--gray-200)"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 4"
+                  />
+                  <circle
+                    cx={getXRev(activeBarIndex)}
+                    cy={170 - (monthlySeries[activeBarIndex].b2b / Math.max(1, maxMonthVal)) * 150}
+                    r="5.5"
+                    fill="var(--primary)"
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
+                  <circle
+                    cx={getXRev(activeBarIndex)}
+                    cy={170 - (monthlySeries[activeBarIndex].b2c / Math.max(1, maxMonthVal)) * 150}
+                    r="5.5"
+                    fill="var(--blue)"
+                    stroke="#fff"
+                    strokeWidth="2"
+                  />
+                </>
+              )}
+
+              {/* Transparent hover rects */}
+              {monthlySeries.map((d, i) => {
+                const step = 600 / (nRev - 1);
+                const rectX = i === 0 ? 0 : i === nRev - 1 ? 600 - step / 2 : (i * step) - step / 2;
+                const rectWidth = i === 0 || i === nRev - 1 ? step / 2 : step;
+                return (
+                  <rect
+                    key={i}
+                    x={rectX}
+                    y="0"
+                    width={rectWidth}
+                    height="200"
+                    fill="transparent"
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setActiveBarIndex(i)}
+                    onMouseLeave={() => setActiveBarIndex(null)}
+                  />
+                );
+              })}
+            </svg>
+
+            {/* Tooltip Popup */}
+            {activeBarIndex !== null && (
+              (() => {
+                const d = monthlySeries[activeBarIndex];
+                const xPercent = (activeBarIndex / (nRev - 1)) * 100;
+                
+                let tooltipLeft = `calc(${xPercent}% - 85px)`;
+                if (activeBarIndex === 0) tooltipLeft = '10px';
+                if (activeBarIndex === nRev - 1) tooltipLeft = 'auto';
+
+                return (
                   <div style={{
-                    height: `${b2bHeight}%`,
-                    width: '35%',
-                    background: 'linear-gradient(to top, var(--primary), var(--purple))',
-                    borderRadius: '4px 4px 0 0',
-                    transition: 'all 0.2s ease',
-                    opacity: activeBarIndex !== null && activeBarIndex !== i ? 0.4 : 0.95
-                  }}></div>
-
-                  <div style={{
-                    height: `${b2cHeight}%`,
-                    width: '35%',
-                    background: 'linear-gradient(to top, var(--blue), var(--blue-dark))',
-                    borderRadius: '4px 4px 0 0',
-                    transition: 'all 0.2s ease',
-                    opacity: activeBarIndex !== null && activeBarIndex !== i ? 0.4 : 0.95
-                  }}></div>
-
-                  {activeBarIndex === i && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: `${Math.max(b2bHeight, b2cHeight) + 6}%`,
-                      background: 'rgba(26, 18, 37, 0.95)',
-                      color: '#fff',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                      pointerEvents: 'none',
-                      zIndex: 10,
-                      whiteSpace: 'nowrap',
-                      border: '1px solid rgba(255,255,255,0.1)'
-                    }}>
-                      <div style={{ fontWeight: 700, color: 'var(--purple-dark)', marginBottom: '4px', textAlign: 'center' }}>{d.label}</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <div>• B2B: <strong style={{ color: 'var(--purple)' }}>{d.b2b.toLocaleString('vi-VN')}đ</strong></div>
-                        <div>• B2C: <strong style={{ color: 'var(--blue)' }}>{d.b2c.toLocaleString('vi-VN')}đ</strong></div>
-                      </div>
+                    position: 'absolute',
+                    bottom: '120px',
+                    left: tooltipLeft,
+                    right: activeBarIndex === nRev - 1 ? '10px' : 'auto',
+                    background: 'rgba(26, 18, 37, 0.95)',
+                    color: '#fff',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    whiteSpace: 'nowrap',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    transition: 'left 0.1s ease'
+                  }}>
+                    <div style={{ fontWeight: 700, color: 'var(--purple-dark)', marginBottom: '4px', textAlign: 'center' }}>{d.label}</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div>• B2B: <strong style={{ color: 'var(--purple)' }}>{d.b2b.toLocaleString('vi-VN')}đ</strong></div>
+                      <div>• B2C: <strong style={{ color: 'var(--blue)' }}>{d.b2c.toLocaleString('vi-VN')}đ</strong></div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  </div>
+                );
+              })()
+            )}
           </div>
+          
           
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', padding: '0 10px' }}>
             {monthlySeries.map((m, i) => (

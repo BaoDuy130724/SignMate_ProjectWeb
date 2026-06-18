@@ -114,6 +114,16 @@ const AnalyticsManagement = () => {
     ? Math.max(...safeData.userGrowth.map(d => d.Value || d.value || 0)) 
     : 1;
 
+  const n = safeData.userGrowth.length;
+  const getX = (i) => n > 1 ? (i / (n - 1)) * 600 : 300;
+  const polylinePoints = safeData.userGrowth.map((g, i) => {
+    const x = getX(i);
+    const val = g.Value || g.value || 0;
+    const y = 210 - (val / Math.max(1, maxGrowthValue)) * 180;
+    return `${x},${y}`;
+  }).join(' ');
+  const polygonPoints = n > 1 ? `0,210 ${polylinePoints} 600,210` : `300,210 ${polylinePoints} 300,210`;
+
   if (!data) return null;
 
   return (
@@ -181,63 +191,135 @@ const AnalyticsManagement = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <div>
               <h3 style={{ margin: 0 }}>Xu hướng Tăng trưởng Người dùng</h3>
-              <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--gray-400)' }}>Biểu đồ cột thể hiện lượng tài khoản mới đăng ký hàng ngày</p>
+              <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--gray-400)' }}>Biểu đồ đường thể hiện lượng tài khoản mới đăng ký hàng ngày</p>
             </div>
             <span style={{ fontSize: '13px', color: 'var(--gray-400)', fontWeight: 600, background: 'var(--gray-50)', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--gray-100)' }}>30 ngày gần nhất</span>
           </div>
           
-          <div style={{ height: '300px', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px', borderBottom: '1px solid var(--gray-200)', zIndex: 1 }}>
-            {/* Grid Lines in background */}
-            <div style={{ position: 'absolute', inset: '0 10px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none', zIndex: 0 }}>
-              <div style={{ borderBottom: '1px dashed var(--gray-100)', height: 0, width: '100%', marginTop: '30px' }}></div>
-              <div style={{ borderBottom: '1px dashed var(--gray-100)', height: 0, width: '100%' }}></div>
-              <div style={{ borderBottom: '1px dashed var(--gray-100)', height: 0, width: '100%' }}></div>
-              <div style={{ borderBottom: '1px dashed var(--gray-100)', height: 0, width: '100%', marginBottom: '30px' }}></div>
-            </div>
-
+          <div style={{ height: '300px', position: 'relative', padding: '0 10px', borderBottom: '1px solid var(--gray-200)', zIndex: 1 }}>
             {safeData.userGrowth.length > 0 ? (
-              safeData.userGrowth.map((g, i) => (
-                <div key={i} className="chart-bar-container" style={{ flex: 1, position: 'relative', height: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1 }}
-                  onMouseEnter={() => setActiveBarIndex(i)}
-                  onMouseLeave={() => setActiveBarIndex(null)}>
+              <div style={{ width: '100%', height: '240px', position: 'relative', marginTop: '30px' }}>
+                <svg viewBox="0 0 600 240" width="100%" height="100%" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                  <defs>
+                    <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
                   
-                  {activeBarIndex === i && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: `${Math.max(10, ((g.Value || g.value || 0) / maxGrowthValue) * 230) + 12}px`,
-                      background: 'rgba(26, 18, 37, 0.95)',
-                      color: '#fff',
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                      pointerEvents: 'none',
-                      zIndex: 10,
-                      whiteSpace: 'nowrap',
-                      textAlign: 'center',
-                      border: '1px solid rgba(255,255,255,0.1)'
-                    }}>
-                      <div style={{ fontWeight: 700, color: 'var(--purple-dark)' }}>{g.Label || g.label}</div>
-                      <div style={{ fontWeight: 800, marginTop: '2px' }}>+{g.Value || g.value || 0} học viên mới</div>
-                    </div>
+                  {/* Grid Lines */}
+                  <line x1="0" y1="30" x2="600" y2="30" stroke="var(--gray-100)" strokeDasharray="4 4" />
+                  <line x1="0" y1="90" x2="600" y2="90" stroke="var(--gray-100)" strokeDasharray="4 4" />
+                  <line x1="0" y1="150" x2="600" y2="150" stroke="var(--gray-100)" strokeDasharray="4 4" />
+                  <line x1="0" y1="210" x2="600" y2="210" stroke="var(--gray-200)" strokeWidth="1" />
+
+                  {/* Shaded Area under Line */}
+                  <polygon
+                    points={polygonPoints}
+                    fill="url(#growthGrad)"
+                  />
+
+                  {/* Line Chart */}
+                  <polyline
+                    points={polylinePoints}
+                    fill="none"
+                    stroke="var(--primary)"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  {/* Active Crosshair & Circle */}
+                  {activeBarIndex !== null && (
+                    <>
+                      {/* Vertical line (crosshair) */}
+                      <line
+                        x1={getX(activeBarIndex)}
+                        y1="10"
+                        x2={getX(activeBarIndex)}
+                        y2="210"
+                        stroke="var(--primary)"
+                        strokeOpacity="0.3"
+                        strokeWidth="1.5"
+                        strokeDasharray="4 4"
+                      />
+                      {/* Circle on the line */}
+                      <circle
+                        cx={getX(activeBarIndex)}
+                        cy={210 - ((safeData.userGrowth[activeBarIndex].Value || safeData.userGrowth[activeBarIndex].value || 0) / Math.max(1, maxGrowthValue)) * 180}
+                        r="6"
+                        fill="var(--primary)"
+                        stroke="#fff"
+                        strokeWidth="2"
+                      />
+                    </>
                   )}
-                  
-                  <div 
-                    className="chart-bar" 
-                    style={{ 
-                      height: `${Math.max(10, ((g.Value || g.value || 0) / maxGrowthValue) * 230)}px`,
-                      width: '65%',
-                      background: activeBarIndex === i 
-                        ? 'var(--primary)' 
-                        : 'linear-gradient(to top, var(--primary), var(--purple))',
-                      borderRadius: '4px 4px 0 0',
-                      transition: 'all 0.2s ease',
-                      cursor: 'pointer',
-                      opacity: activeBarIndex !== null && activeBarIndex !== i ? 0.4 : 1
-                    }}
-                  ></div>
-                </div>
-              ))
+
+                  {/* Invisible rects for hover detection */}
+                  {safeData.userGrowth.map((g, i) => {
+                    const step = n > 1 ? 600 / (n - 1) : 600;
+                    const rectX = n > 1 
+                      ? (i === 0 ? 0 : i === n - 1 ? 600 - step / 2 : (i * step) - step / 2)
+                      : 0;
+                    const rectWidth = n > 1
+                      ? (i === 0 || i === n - 1 ? step / 2 : step)
+                      : 600;
+                    return (
+                      <rect
+                        key={i}
+                        x={rectX}
+                        y="0"
+                        width={rectWidth}
+                        height="240"
+                        fill="transparent"
+                        style={{ cursor: 'pointer' }}
+                        onMouseEnter={() => setActiveBarIndex(i)}
+                        onMouseLeave={() => setActiveBarIndex(null)}
+                      />
+                    );
+                  })}
+                </svg>
+
+                {/* Tooltip Popup */}
+                {activeBarIndex !== null && (
+                  (() => {
+                    const g = safeData.userGrowth[activeBarIndex];
+                    const val = g.Value || g.value || 0;
+                    const xPercent = n > 1 ? (activeBarIndex / (n - 1)) * 100 : 50;
+                    const yVal = (val / Math.max(1, maxGrowthValue)) * 180;
+                    const isNearLeft = activeBarIndex < 2;
+                    const isNearRight = activeBarIndex > n - 3;
+                    
+                    let tooltipLeft = `calc(${xPercent}% - 70px)`;
+                    if (isNearLeft) tooltipLeft = '10px';
+                    if (isNearRight) tooltipLeft = 'auto';
+
+                    return (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: `${yVal + 40}px`,
+                        left: tooltipLeft,
+                        right: isNearRight ? '10px' : 'auto',
+                        background: 'rgba(26, 18, 37, 0.95)',
+                        color: '#fff',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                        pointerEvents: 'none',
+                        zIndex: 10,
+                        whiteSpace: 'nowrap',
+                        textAlign: 'center',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        transition: 'bottom 0.1s ease, left 0.1s ease'
+                      }}>
+                        <div style={{ fontWeight: 700, color: 'var(--purple-dark)' }}>{g.Label || g.label}</div>
+                        <div style={{ fontWeight: 800, marginTop: '2px' }}>+{val} học viên mới</div>
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
             ) : (
               <div style={{ width: '100%', textAlign: 'center', paddingBottom: '100px', color: 'var(--gray-300)', zIndex: 1 }}>Không có dữ liệu tăng trưởng</div>
             )}
