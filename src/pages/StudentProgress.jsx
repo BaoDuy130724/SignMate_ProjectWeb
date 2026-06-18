@@ -246,26 +246,70 @@ const StudentProgress = () => {
           </div>
         </div>
       ) : (
-        /* Free Locked State */
-        <div className="card" style={{ 
-          background: 'linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%)',
-          border: '2px dashed var(--gray-200)',
-          padding: '48px',
-          textAlign: 'center',
-          marginBottom: '32px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <Lock size={48} style={{ color: 'var(--primary)', marginBottom: '16px' }} />
-          <h3 style={{ marginBottom: '8px' }}>Mở khóa Thống kê Phân tích Chi tiết</h3>
-          <p style={{ color: 'var(--gray-400)', maxWidth: '480px', margin: '0 auto 24px', fontSize: '14px' }}>
-            Nâng cấp tài khoản Premium để xem biểu đồ độ chính xác theo chủ đề, các nội dung còn yếu và nhận phân tích sửa lỗi trực quan nhất.
-          </p>
-          <button className="btn btn-primary" onClick={() => window.location.href = '/pricing'}>
-            Nâng cấp ngay <Zap size={18} />
-          </button>
+        /* Free Locked State with matching 2-column layout */
+        <div style={{ position: 'relative', marginBottom: '32px' }}>
+          {/* Blurred mock cards matching 2-column grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', filter: 'blur(5px)', opacity: 0.45, pointerEvents: 'none', userSelect: 'none' }}>
+            {/* Mock Subject Accuracy card */}
+            <div className="card" style={{ padding: '32px' }}>
+              <h3 style={{ marginBottom: '20px' }}>Độ chính xác theo chủ đề</h3>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: '180px', paddingTop: '20px' }}>
+                {[85, 60, 45, 90, 75].map((score, i) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, gap: '8px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)' }}>{score}%</div>
+                    <div style={{ width: '28px', height: '100px', background: 'var(--gray-100)', borderRadius: '6px', overflow: 'hidden', position: 'relative' }}>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: `${score}%`, background: score >= 70 ? 'var(--primary)' : 'var(--orange)', borderRadius: '0 0 6px 6px' }} />
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--gray-400)', width: '60px', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Chủ đề {i+1}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Mock Weak Topics card */}
+            <div className="card" style={{ padding: '32px' }}>
+              <h3 style={{ marginBottom: '20px' }}>Chủ đề cần cải thiện</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {[
+                  { name: 'Ký hiệu số đếm', score: 55 },
+                  { name: 'Giao tiếp cơ bản', score: 62 },
+                  { name: 'Chào hỏi', score: 48 }
+                ].map((t, i) => (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '14px' }}>{t.name}</span>
+                      <span style={{ fontWeight: 800, color: 'var(--red)', fontSize: '14px' }}>{t.score}%</span>
+                    </div>
+                    <div style={{ height: '8px', background: 'var(--gray-100)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${t.score}%`, height: '100%', background: 'var(--red)', borderRadius: '4px' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Absolute centered locked overlay */}
+          <div style={{ 
+            position: 'absolute', inset: 0, 
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(255, 255, 255, 0.4)', borderRadius: 'var(--radius-lg)',
+            textAlign: 'center', padding: '24px', zIndex: 10
+          }}>
+            <div style={{
+              background: 'white', border: '2px dashed var(--gray-200)', borderRadius: 'var(--radius-lg)',
+              padding: '36px 48px', boxShadow: 'var(--shadow-lg)', maxWidth: '540px'
+            }}>
+              <Lock size={44} style={{ color: 'var(--primary)', marginBottom: '16px', margin: '0 auto' }} />
+              <h3 style={{ marginBottom: '8px', fontSize: '20px' }}>Mở khóa Thống kê Phân tích Chi tiết</h3>
+              <p style={{ color: 'var(--gray-500)', margin: '0 auto 24px', fontSize: '14px', lineHeight: '1.6' }}>
+                Nâng cấp tài khoản Premium để xem biểu đồ độ chính xác theo chủ đề, các nội dung còn yếu và nhận phân tích sửa lỗi trực quan nhất.
+              </p>
+              <button className="btn btn-primary btn-sm" onClick={() => window.location.href = '/pricing'}>
+                Nâng cấp ngay <Zap size={16} />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

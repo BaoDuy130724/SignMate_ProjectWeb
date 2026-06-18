@@ -211,8 +211,8 @@ const TeacherReports = () => {
         {/* Right side: weak topics list & export banner */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div className="card" style={{ padding: '24px' }}>
-            <h3 style={{ marginBottom: '16px' }}>Chuyên đề yếu của lớp</h3>
-            <p style={{ color: 'var(--gray-400)', fontSize: '13px', marginBottom: '20px' }}>Các chủ đề có độ chính xác trung bình dưới 70%</p>
+            <h3 style={{ marginBottom: '12px' }}>Chuyên đề yếu của lớp</h3>
+            <p style={{ color: 'var(--gray-400)', fontSize: '13px', marginBottom: '16px' }}>Các chủ đề có độ chính xác trung bình dưới 70%</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {weakTopicsSorted.length > 0 ? (
                 weakTopicsSorted.map(topic => (
@@ -229,9 +229,9 @@ const TeacherReports = () => {
           </div>
 
           <div className="card" style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%)', color: 'white', border: 'none', padding: '24px' }}>
-            <FileText size={40} style={{ marginBottom: '16px', color: 'white' }} />
-            <h3 style={{ color: 'white', marginBottom: '8px' }}>Xuất báo cáo lớp học</h3>
-            <p style={{ opacity: 0.9, fontSize: '13px', marginBottom: '24px' }}>
+            <FileText size={40} style={{ marginBottom: '12px', color: 'white' }} />
+            <h3 style={{ color: 'white', marginBottom: '12px' }}>Xuất báo cáo lớp học</h3>
+            <p style={{ opacity: 0.9, fontSize: '13px', marginBottom: '16px' }}>
               Tải file PDF báo cáo kết quả rèn luyện chi tiết của học viên lớp {activeClass.name}.
             </p>
             <button className="btn btn-white btn-sm" style={{ width: '100%' }} onClick={handleExport} disabled={exporting}>
