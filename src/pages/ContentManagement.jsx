@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Plus, Edit2, Trash2, Eye, ChevronDown, ChevronRight, Video, List, FileText, Loader2, Save, X, Search, Filter } from 'lucide-react';
-import { coursesApi, lessonsApi } from '../services/api';
+import { BookOpen, Plus, Edit2, Trash2, Eye, ChevronDown, ChevronRight, Video, List, FileText, Loader2, Save, X, Search, Filter, Check, AlertTriangle, Calendar, User } from 'lucide-react';
+import { coursesApi, lessonsApi, vocabularyApi } from '../services/api';
 
 const ContentManagement = () => {
   const [courses, setCourses] = useState([]);
@@ -9,6 +9,13 @@ const ContentManagement = () => {
   const [courseLessons, setCourseLessons] = useState({});
   const [loadingLessons, setLoadingLessons] = useState({});
   const [levelFilter, setLevelFilter] = useState(''); // '' = tất cả
+  
+  const [activeTab, setActiveTab] = useState('courses'); // 'courses' or 'pendingReferences'
+  const [pendingReferences, setPendingReferences] = useState([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [rejectReason, setRejectReason] = useState('Video không đạt chuẩn');
   
   // Modals / Forms
   const [showCourseModal, setShowCourseModal] = useState(false);
@@ -31,9 +38,58 @@ const ContentManagement = () => {
     }
   };
 
+  const fetchPendingReferences = async () => {
+    setLoadingPending(true);
+    try {
+      const data = await vocabularyApi.getPendingReferences();
+      setPendingReferences(data || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
+
   useEffect(() => {
     fetchCourses();
+    fetchPendingReferences();
   }, []);
+
+  const handleApproveReference = async (requestId) => {
+    if (window.confirm('Bạn có chắc chắn muốn DUYỆT video mẫu này? Dữ liệu mẫu AI sẽ được cập nhật.')) {
+      try {
+        await vocabularyApi.approveRequest(requestId);
+        fetchPendingReferences();
+      } catch (err) {
+        alert(err.message || 'Lỗi khi duyệt yêu cầu.');
+      }
+    }
+  };
+
+  const handleOpenRejectModal = (request) => {
+    setSelectedRequest(request);
+    setRejectReason('Video không đạt chuẩn');
+    setShowRejectModal(true);
+  };
+
+  const handleConfirmReject = async (e) => {
+    e.preventDefault();
+    if (!selectedRequest) return;
+    try {
+      await vocabularyApi.rejectRequest(selectedRequest.id, rejectReason);
+      setShowRejectModal(false);
+      fetchPendingReferences();
+    } catch (err) {
+      alert(err.message || 'Lỗi khi từ chối yêu cầu.');
+    }
+  };
+
+  const getFullVideoUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const base = window.location.hostname === 'localhost' ? 'http://localhost:5184' : window.location.origin;
+    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
 
   const toggleCourse = async (courseId) => {
     if (expandedCourse === courseId) {
@@ -114,16 +170,69 @@ const ContentManagement = () => {
           <h1 className="page-title">Quản lý Nội dung Đào tạo</h1>
           <p className="page-subtitle">Thiết kế lộ trình học, bài giảng và tài liệu học liệu</p>
         </div>
-        <button className="btn btn-primary" onClick={() => {
-          setEditCourse(null);
-          setCourseForm({ title: '', description: '', level: 'Beginner', thumbnailUrl: '', isPublished: false });
-          setShowCourseModal(true);
-        }}>
-          <Plus size={18} /> Tạo Khóa học mới
+        {activeTab === 'courses' && (
+          <button className="btn btn-primary" onClick={() => {
+            setEditCourse(null);
+            setCourseForm({ title: '', description: '', level: 'Beginner', thumbnailUrl: '', isPublished: false });
+            setShowCourseModal(true);
+          }}>
+            <Plus size={18} /> Tạo Khóa học mới
+          </button>
+        )}
+      </div>
+
+      <div className="tabs-container" style={{ display: 'flex', gap: '16px', marginBottom: '24px', borderBottom: '1px solid var(--gray-200)', paddingBottom: '8px' }}>
+        <button
+          onClick={() => setActiveTab('courses')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '8px 16px',
+            fontWeight: 800,
+            fontSize: '16px',
+            color: activeTab === 'courses' ? 'var(--primary)' : 'var(--gray-500)',
+            borderBottom: activeTab === 'courses' ? '3px solid var(--primary)' : '3px solid transparent',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Cấu trúc Khóa học
+        </button>
+        <button
+          onClick={() => setActiveTab('pendingReferences')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '8px 16px',
+            fontWeight: 800,
+            fontSize: '16px',
+            color: activeTab === 'pendingReferences' ? 'var(--primary)' : 'var(--gray-500)',
+            borderBottom: activeTab === 'pendingReferences' ? '3px solid var(--primary)' : '3px solid transparent',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          Duyệt video mẫu
+          {pendingReferences.length > 0 && (
+            <span style={{
+              background: 'var(--red)',
+              color: 'white',
+              borderRadius: '9999px',
+              padding: '2px 8px',
+              fontSize: '12px',
+              fontWeight: 800
+            }}>
+              {pendingReferences.length}
+            </span>
+          )}
         </button>
       </div>
 
-      <div className="table-wrapper">
+      {activeTab === 'courses' ? (
+        <div className="table-wrapper">
         <div className="table-header">
           <div className="table-title">Cấu trúc Khóa học</div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -235,6 +344,106 @@ const ContentManagement = () => {
           </tbody>
         </table>
       </div>
+      ) : (
+        <div className="pending-references-wrapper" style={{ marginTop: '16px' }}>
+          {loadingPending ? (
+            <div style={{ padding: '100px', textAlign: 'center' }}><Loader2 className="spinning" /></div>
+          ) : pendingReferences.length === 0 ? (
+            <div className="card" style={{ padding: '48px', textAlign: 'center', color: 'var(--gray-400)' }}>
+              <Video size={48} style={{ margin: '0 auto 16px', strokeWidth: 1.5, color: 'var(--gray-300)' }} />
+              <h3 style={{ fontWeight: 800, color: 'var(--gray-700)', marginBottom: '8px' }}>Không có yêu cầu chờ duyệt</h3>
+              <p>Khi giáo viên tải lên video mẫu mới cho từ vựng, các yêu cầu sẽ xuất hiện tại đây.</p>
+            </div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '24px'
+            }}>
+              {pendingReferences.map(req => (
+                <div key={req.id} className="card" style={{ padding: '0', overflow: 'hidden', border: '1px solid var(--gray-200)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', background: '#000' }}>
+                    <video
+                      src={getFullVideoUrl(req.videoUrl)}
+                      controls
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain'
+                      }}
+                    />
+                  </div>
+                  <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <span className="badge badge-blue" style={{ fontSize: '14px', padding: '4px 10px', fontWeight: 800 }}>
+                          Ký hiệu: {req.signName}
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--gray-400)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Calendar size={12} />
+                          {new Date(req.createdAt).toLocaleDateString('vi-VN')}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '14px', color: 'var(--gray-600)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '16px' }}>
+                        <User size={14} color="var(--gray-400)" />
+                        <span>Người gửi: <strong>{req.uploaderName}</strong></span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', background: 'var(--green)', borderColor: 'var(--green)' }}
+                        onClick={() => handleApproveReference(req.id)}
+                      >
+                        <Check size={16} /> Duyệt
+                      </button>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: 'var(--red)', borderColor: 'var(--red)' }}
+                        onClick={() => handleOpenRejectModal(req)}
+                      >
+                        <X size={16} /> Từ chối
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reject Reason Modal */}
+      {showRejectModal && (
+        <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="card" style={{ width: '450px', animation: 'slideIn 0.3s ease' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <AlertTriangle size={24} color="var(--red)" />
+              <h2 style={{ margin: 0, fontSize: '20px' }}>Từ chối video mẫu</h2>
+            </div>
+            <form onSubmit={handleConfirmReject}>
+              <div className="form-group">
+                <label className="form-label">Lý do từ chối</label>
+                <textarea
+                  className="form-input"
+                  style={{ height: '100px', resize: 'vertical' }}
+                  required
+                  placeholder="Nhập lý do từ chối để gửi lại cho người đăng..."
+                  value={rejectReason}
+                  onChange={e => setRejectReason(e.target.value)}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button type="submit" className="btn" style={{ flex: 1, background: 'var(--red)', color: 'white', border: 'none', cursor: 'pointer' }}>Xác nhận từ chối</button>
+                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowRejectModal(false)}>Hủy</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Course Modal */}
       {showCourseModal && (
