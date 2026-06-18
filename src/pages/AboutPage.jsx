@@ -7,6 +7,8 @@ const AboutPage = () => {
     { name: 'Trần Thị B', role: 'CTO', initials: 'B', color: 'var(--blue)' },
     { name: 'Lê Văn C', role: 'AI Engineer', initials: 'C', color: 'var(--yellow-dark)' },
     { name: 'Phạm Thị D', role: 'Product Designer', initials: 'D', color: 'var(--purple-dark)' },
+    { name: 'Hoàng Văn E', role: 'Mobile Developer', initials: 'E', color: 'var(--orange-dark)' },
+    { name: 'Vũ Thị F', role: 'QA Engineer', initials: 'F', color: 'var(--red-dark)' },
   ];
 
   return (
@@ -99,7 +101,7 @@ const AboutPage = () => {
       <section className="section section-alt">
         <div className="container text-center">
           <span className="section-label">👥 Đội ngũ</span>
-          <h2 className="section-title">Những con người đứng sau SignMate</h2>
+          <h2 className="section-title">Nhóm 6 người của Freaky Club</h2>
           <p className="section-subtitle mx-auto">
             Đội ngũ trẻ, năng động, đam mê công nghệ và tác động xã hội
           </p>
