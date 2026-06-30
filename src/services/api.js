@@ -256,6 +256,9 @@ export const centersApi = {
 
   getDashboard: (id) => get(`/centers/${id}/dashboard`),
 
+  // Nhận định AI cho trung tâm (CenterAdmin chỉ đọc center mình — BE chặn IDOR).
+  getInsight: (id, forceRefresh = false) => get(`/centers/${id}/insight${forceRefresh ? '?forceRefresh=true' : ''}`),
+
   createAdmin: (centerId, data) => post(`/centers/${centerId}/admin`, data),
 
   getMember: (centerId, userId) => get(`/centers/${centerId}/members/${userId}`),

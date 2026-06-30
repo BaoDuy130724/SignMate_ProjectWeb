@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Users, Activity, Target, GraduationCap, CreditCard, Loader2, Plus, X, BookOpen, UserPlus, CheckCircle2, AlertCircle, Eye, EyeOff, UserCheck, Edit, Trash2, Layers, PlayCircle } from 'lucide-react';
 import { centersApi, classesApi, coursesApi } from '../services/api';
+import AiInsightCard from '../components/AiInsightCard';
 
 // ===== Toast Notification =====
 const Toast = ({ message, type, onClose }) => {
@@ -704,6 +705,17 @@ const CenterAdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* ===== AI phân tích trung tâm ===== */}
+      {centerId && (
+        <div style={{ margin: '24px 0' }}>
+          <AiInsightCard
+            title="AI phân tích trung tâm"
+            subtitle="Gemini đọc số liệu thật của trung tâm bạn và đưa ra nhận định, điểm cần lưu ý, khuyến nghị"
+            fetchInsight={(force) => centersApi.getInsight(centerId, force)}
+          />
+        </div>
+      )}
 
       {/* ===== Tabbed Section ===== */}
       <div style={{ marginBottom: '24px' }}>
