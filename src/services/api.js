@@ -228,6 +228,10 @@ export const adminApi = {
 // ============================
 export const analyticsApi = {
   getGlobal: () => get('/analytics'),
+  // AI insight (SuperAdmin). forceRefresh=true bỏ qua cache 3h ở BE để tạo lại.
+  getInsight: (forceRefresh = false) => get(`/analytics/insight${forceRefresh ? '?forceRefresh=true' : ''}`),
+  getRevenueInsight: (forceRefresh = false) => get(`/analytics/revenue-insight${forceRefresh ? '?forceRefresh=true' : ''}`),
+  getAlerts: () => get('/analytics/alerts'),
 };
 
 // ============================

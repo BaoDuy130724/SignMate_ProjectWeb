@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PieChart, Activity, Download, Loader2, ArrowUpRight, ArrowDownRight, Building2 } from 'lucide-react';
 import { analyticsApi } from '../services/api';
 import { exportReportPdf } from '../utils/exportPdf';
+import AiInsightCard from '../components/AiInsightCard';
 
 const AnalyticsManagement = () => {
   const [data, setData] = useState(null);
@@ -76,10 +77,25 @@ const AnalyticsManagement = () => {
   const handleExportPdf = async () => {
     setExporting(true);
     try {
+      // Dùng lại insight đã cache ở BE (không tạo mới) để nhúng tóm tắt AI vào đầu báo cáo.
+      let aiSummary = null;
+      try {
+        const ins = await analyticsApi.getInsight(false);
+        if (ins && (ins.aiAvailable ?? ins.AiAvailable)) {
+          aiSummary = {
+            summary: ins.summary ?? ins.Summary,
+            positives: ins.positives ?? ins.Positives,
+            concerns: ins.concerns ?? ins.Concerns,
+            recommendations: ins.recommendations ?? ins.Recommendations,
+          };
+        }
+      } catch { /* không có AI thì xuất báo cáo thường */ }
+
       await exportReportPdf({
         title: 'Báo cáo Phân tích Hệ thống',
         subtitle: 'Dữ liệu tăng trưởng và hiệu quả đào tạo toàn nền tảng',
         fileName: 'bao-cao-phan-tich.pdf',
+        aiSummary,
         summary: [
           { label: 'Tổng người dùng', value: safeData.totalUsers },
           { label: 'Người dùng B2B', value: safeData.b2bUsers },
@@ -183,6 +199,14 @@ const AnalyticsManagement = () => {
             • {safeData.totalUsers > 0 ? ((safeData.activeUsersLast30Days / safeData.totalUsers) * 100).toFixed(0) : 0}% trên tổng người dùng
           </div>
         </div>
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+        <AiInsightCard
+          title="AI phân tích hệ thống"
+          subtitle="Gemini đọc số liệu thật ở trên và đưa ra nhận định, điểm đáng lưu ý, khuyến nghị"
+          fetchInsight={(force) => analyticsApi.getInsight(force)}
+        />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px', marginBottom: '32px' }}>

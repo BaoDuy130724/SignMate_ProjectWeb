@@ -1,7 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Users, Activity, Building2, CreditCard, ArrowUpRight, ArrowDownRight, Globe, DollarSign } from 'lucide-react';
-import { centersApi, usersApi, subscriptionApi, adminApi } from '../services/api';
+import { Users, Activity, Building2, CreditCard, ArrowUpRight, ArrowDownRight, Globe, DollarSign, AlertTriangle, AlertOctagon, Info } from 'lucide-react';
+import { centersApi, usersApi, subscriptionApi, adminApi, analyticsApi } from '../services/api';
+
+// Cảnh báo bất thường (rule-based từ BE). Màu theo severity.
+const ALERT_STYLE = {
+  critical: { bg: '#fdecea', border: '#e74c3c', color: '#c0392b', icon: AlertOctagon },
+  warning: { bg: '#fff6e5', border: '#f59e0b', color: '#b45309', icon: AlertTriangle },
+  info: { bg: '#eef4ff', border: '#3b82f6', color: '#1d4ed8', icon: Info },
+};
+
+const AlertBanner = ({ alerts }) => {
+  if (!alerts || alerts.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+      {alerts.map((a, i) => {
+        const s = ALERT_STYLE[a.severity] || ALERT_STYLE.info;
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 16px', background: s.bg, borderLeft: `4px solid ${s.border}`, borderRadius: '8px' }}>
+            {React.createElement(s.icon, { size: 20, color: s.border, style: { flexShrink: 0, marginTop: '2px' } })}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: '14px', color: s.color }}>
+                {a.title}{a.metric ? <span style={{ marginLeft: '8px', fontWeight: 700 }}>({a.metric})</span> : null}
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--gray-600)', marginTop: '2px', lineHeight: 1.5 }}>{a.detail}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+AlertBanner.propTypes = { alerts: PropTypes.array };
 
 // Tách ra ngoài để tránh re-define mỗi render (S6478)
 const StatCard = ({ title, value, subValue, icon: Icon, colorClass, trend, clickable }) => (
@@ -110,8 +140,14 @@ const loadGlobalStats = async (setStats, setLoading) => {
 const SuperAdminDashboard = () => {
   const [stats, setStats] = useState(INITIAL_STATS);
   const [loading, setLoading] = useState(true);
+  const [alerts, setAlerts] = useState([]);
 
   useEffect(() => { loadGlobalStats(setStats, setLoading); }, []);
+  useEffect(() => {
+    analyticsApi.getAlerts()
+      .then(res => setAlerts(Array.isArray(res) ? res : []))
+      .catch(() => setAlerts([]));
+  }, []);
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}><div className="spinning">Loading...</div></div>;
@@ -141,6 +177,8 @@ const SuperAdminDashboard = () => {
           <CreditCard size={18} style={{ marginRight: '8px' }} /> Báo Cáo Tài Chính
         </button>
       </div>
+
+      <AlertBanner alerts={alerts} />
 
       <div className="stat-grid" style={{ marginBottom: '32px' }}>
         <StatCard title="Tổng người dùng" value={stats.totalUsers.toLocaleString()} subValue={`${stats.premiumUsers} Premium · ${stats.freeUsers} Free`} trend="up" icon={Users} colorClass="card-icon-blue" />

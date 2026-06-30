@@ -3,8 +3,9 @@ import {
   TrendingUp, ArrowUpRight, ArrowDownRight, Download,
   Clock, CheckCircle2, Loader2, Landmark, Layers, Users
 } from 'lucide-react';
-import { subscriptionApi } from '../services/api';
+import { subscriptionApi, analyticsApi } from '../services/api';
 import { exportReportPdf } from '../utils/exportPdf';
+import AiInsightCard from '../components/AiInsightCard';
 
 const RevenueManagement = () => {
   const [transactions, setTransactions] = useState([]);
@@ -136,10 +137,25 @@ const RevenueManagement = () => {
     setExporting(true);
     try {
       const vnd = (n) => `${(n || 0).toLocaleString('vi-VN')}đ`;
+      // Nhúng tóm tắt AI doanh thu (dùng lại cache BE) vào đầu báo cáo.
+      let aiSummary = null;
+      try {
+        const ins = await analyticsApi.getRevenueInsight(false);
+        if (ins && (ins.aiAvailable ?? ins.AiAvailable)) {
+          aiSummary = {
+            summary: ins.summary ?? ins.Summary,
+            positives: ins.positives ?? ins.Positives,
+            concerns: ins.concerns ?? ins.Concerns,
+            recommendations: ins.recommendations ?? ins.Recommendations,
+          };
+        }
+      } catch { /* không có AI thì xuất báo cáo thường */ }
+
       await exportReportPdf({
         title: 'Báo cáo Tài chính',
         subtitle: 'Doanh thu B2B/B2C và giao dịch gói đăng ký',
         fileName: 'bao-cao-tai-chinh.pdf',
+        aiSummary,
         summary: [
           { label: 'Tổng doanh thu (MRR ước tính)', value: vnd(totalRevenue) },
           { label: `Doanh thu B2B (${b2bPercent}%)`, value: vnd(b2bRevenue) },
@@ -198,6 +214,14 @@ const RevenueManagement = () => {
         <StatPanel title="Doanh thu B2B" value={`${b2bRevenue.toLocaleString('vi-VN')}đ`} icon={Layers} trend={b2bTrend >= 0 ? 'up' : 'down'} trendValue={fmtTrend(b2bTrend)} color="var(--purple)" />
         <StatPanel title="Doanh thu B2C" value={`${b2cRevenue.toLocaleString('vi-VN')}đ`} icon={Users} trend={b2cTrend >= 0 ? 'up' : 'down'} trendValue={fmtTrend(b2cTrend)} color="var(--blue)" />
         <StatPanel title="Doanh thu TB / Khách" value={`${arpu.toLocaleString('vi-VN')}đ`} icon={TrendingUp} trend={arpuTrend >= 0 ? 'up' : 'down'} trendValue={fmtTrend(arpuTrend)} color="var(--green)" />
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+        <AiInsightCard
+          title="AI phân tích doanh thu"
+          subtitle="Gemini đánh giá sức khỏe doanh thu, B2B/B2C, xu hướng theo tháng và rủi ro"
+          fetchInsight={(force) => analyticsApi.getRevenueInsight(force)}
+        />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px', marginBottom: '32px' }}>
