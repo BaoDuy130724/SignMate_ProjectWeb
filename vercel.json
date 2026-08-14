@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "http://signmate.runasp.net/api/:path*"
+      "destination": "http://signmate-be.runasp.net/api/:path*"
     },
     {
       "source": "/(.*)",
