@@ -3,12 +3,12 @@ import { Heart, Target, Eye, Users, Lightbulb } from 'lucide-react';
 
 const AboutPage = () => {
   const team = [
-    { name: 'Nguyễn Văn A', role: 'Co-Founder & CEO', initials: 'A', color: 'var(--primary)' },
-    { name: 'Trần Thị B', role: 'CTO', initials: 'B', color: 'var(--blue)' },
-    { name: 'Lê Văn C', role: 'AI Engineer', initials: 'C', color: 'var(--yellow-dark)' },
-    { name: 'Phạm Thị D', role: 'Product Designer', initials: 'D', color: 'var(--purple-dark)' },
-    { name: 'Hoàng Văn E', role: 'Mobile Developer', initials: 'E', color: 'var(--orange-dark)' },
-    { name: 'Vũ Thị F', role: 'QA Engineer', initials: 'F', color: 'var(--red-dark)' },
+    { name: 'Trương Gia Kiệt', role: 'Co-Founder & CEO', initials: 'A', color: 'var(--primary)' },
+    { name: 'Lê Giang', role: 'CTO', initials: 'B', color: 'var(--blue)' },
+    { name: 'Lê Trần Bảo Duy', role: 'AI Engineer', initials: 'C', color: 'var(--yellow-dark)' },
+    { name: 'Quỳnh Thị Ngọc Trâm', role: 'Product Designer', initials: 'D', color: 'var(--purple-dark)' },
+    { name: 'Trương Hoàng Phát', role: 'Mobile Developer', initials: 'E', color: 'var(--orange-dark)' },
+    { name: 'Đỗ Hoàng Quốc Phong', role: 'QA Engineer', initials: 'F', color: 'var(--red-dark)' },
   ];
 
   return (
