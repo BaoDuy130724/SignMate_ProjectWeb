@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   CheckCircle2,
   ShieldCheck,
-  Zap,
   Calendar,
   Users,
   Star,
