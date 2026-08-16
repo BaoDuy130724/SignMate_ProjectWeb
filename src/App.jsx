@@ -44,6 +44,7 @@ import CenterContent from './pages/CenterContent';
 
 import StudentAssignments from './pages/StudentAssignments';
 import StudentProgress from './pages/StudentProgress';
+import StudentTransactions from './pages/StudentTransactions';
 import NotificationsPage from './pages/NotificationsPage';
 import TeacherStudentsPage from './pages/TeacherStudentsPage';
 import TeacherAssign from './pages/TeacherAssign';
@@ -80,12 +81,13 @@ DashboardLayout.propTypes = {
  * allowed, or redirects to /login.
  */
 const ProtectedRoute = ({ currentRole, allow, children }) => {
+  const normRole = (currentRole === 'Learner' || currentRole === 'Student') ? 'Student' : currentRole;
   const allowed = allow === 'any'
-    ? Boolean(currentRole) && currentRole !== 'Guest'
-    : currentRole === allow;
+    ? Boolean(normRole) && normRole !== 'Guest'
+    : normRole === allow;
 
   if (!allowed) return <Navigate to="/login" />;
-  return <DashboardLayout role={currentRole}>{children}</DashboardLayout>;
+  return <DashboardLayout role={normRole}>{children}</DashboardLayout>;
 };
 ProtectedRoute.propTypes = {
   currentRole: PropTypes.string,
@@ -165,6 +167,7 @@ function App() {
         <Route path="/student" element={guard('Student', <StudentDashboard />)} />
         <Route path="/student/assignments" element={guard('Student', <StudentAssignments />)} />
         <Route path="/student/progress" element={guard('Student', <StudentProgress />)} />
+        <Route path="/student/transactions" element={guard('Student', <StudentTransactions />)} />
         <Route path="/student/mobile" element={guard('Student', StudentMobilePlaceholder)} />
 
         {/* ===== WEB 1: Super Admin Dashboard ===== */}

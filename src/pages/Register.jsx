@@ -63,10 +63,16 @@ const RegisterPage = ({ setRole }) => {
       if (res.refreshToken) localStorage.setItem('refreshToken', res.refreshToken);
       
       const user = await authApi.me();
-      const role = user.role || 'Student';
+      let role = user.role || 'Student';
+      if (role === 'Learner') role = 'Student';
       setRole(role);
       localStorage.setItem('userRole', role);
       if (user.fullName) localStorage.setItem('fullName', user.fullName);
+      if (user.centerId && user.centerId !== 0 && user.centerId !== '0') {
+        localStorage.setItem('centerId', user.centerId.toString());
+      } else {
+        localStorage.removeItem('centerId');
+      }
 
       navigate('/student');
     } catch (err) {

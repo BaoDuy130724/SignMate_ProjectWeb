@@ -446,6 +446,25 @@ export const subscriptionApi = {
 
   verifyPayment: (orderCode) => post(`/subscription/verify-payment?orderCode=${orderCode}`),
 
+  getMyTransactions: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.fromDate) query.append('fromDate', params.fromDate);
+    if (params.toDate) query.append('toDate', params.toDate);
+    if (params.status) query.append('status', params.status);
+    const qs = query.toString();
+    return get(`/subscription/my-history${qs ? `?${qs}` : ''}`);
+  },
+
+  getAdminTransactions: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.userId) query.append('userId', params.userId);
+    if (params.status) query.append('status', params.status);
+    if (params.fromDate) query.append('fromDate', params.fromDate);
+    if (params.toDate) query.append('toDate', params.toDate);
+    const qs = query.toString();
+    return get(`/subscription/admin/transactions${qs ? `?${qs}` : ''}`);
+  },
+
   getAll: () => get('/subscription/all'),
 
   createPlan: (data) => post('/plans', data),

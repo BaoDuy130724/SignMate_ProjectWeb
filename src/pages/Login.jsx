@@ -25,15 +25,18 @@ const LoginPage = ({ setRole }) => {
 
       // Get user info to determine role
       const user = await authApi.me();
-      const role = user.role || 'Learner';
+      let role = user.role || 'Student';
+      if (role === 'Learner') role = 'Student';
       setRole(role);
       
       localStorage.setItem('userRole', role);
       if (user.fullName) {
         localStorage.setItem('fullName', user.fullName);
       }
-      if (user.centerId) {
-        localStorage.setItem('centerId', user.centerId);
+      if (user.centerId && user.centerId !== 0 && user.centerId !== '0') {
+        localStorage.setItem('centerId', user.centerId.toString());
+      } else {
+        localStorage.removeItem('centerId');
       }
 
       // 1. Check if we have a 'from' location to redirect back to

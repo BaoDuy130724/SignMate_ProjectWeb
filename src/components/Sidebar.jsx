@@ -4,12 +4,15 @@ import logoImg from '../assets/EXE201/logo.02-04.png';
 import { 
   LayoutDashboard, Users, Building2, CreditCard, BookOpen, BarChart3, LogOut,
   GraduationCap, UserPlus, ClipboardList,
-  Eye, FileText, Settings, Map, Layers, Smartphone, TrendingUp, Bell
+  Eye, FileText, Settings, Map, Layers, Smartphone, TrendingUp, Bell, Receipt
 } from 'lucide-react';
 
 const notificationsLink = { to: '/notifications', icon: <Bell size={20} />, label: 'Thông báo' };
 
 const Sidebar = ({ role }) => {
+  const rawCenterId = localStorage.getItem('centerId');
+  const isB2BStudent = Boolean(rawCenterId && rawCenterId !== 'null' && rawCenterId !== 'undefined' && rawCenterId !== '' && rawCenterId !== '0');
+
   const getConfig = () => {
     switch (role) {
       case 'SuperAdmin':
@@ -60,7 +63,7 @@ const Sidebar = ({ role }) => {
                 { to: '/center/content', icon: <BookOpen size={20} />, label: 'Nội dung khóa học' },
                 { to: '/center/students', icon: <UserPlus size={20} />, label: 'Học viên' },
                 { to: '/center/teachers', icon: <Users size={20} />, label: 'Giáo viên' },
-                { to: '/center/subscription', icon: <CreditCard size={20} />, label: 'Gói dịch vụ' },
+                { to: '/center/subscription', icon: <CreditCard size={20} />, label: 'Gói dịch vụ & GD' },
                 { to: '/center/reports', icon: <FileText size={20} />, label: 'Báo cáo' },
               ]
             },
@@ -89,6 +92,7 @@ const Sidebar = ({ role }) => {
           ]
         };
       case 'Student':
+      case 'Learner':
         return {
           title: 'LEARNER PORTAL',
           sections: [
@@ -107,10 +111,16 @@ const Sidebar = ({ role }) => {
               ]
             },
             {
+              label: 'Gói cước & Thanh toán',
+              links: [
+                { to: '/student/transactions', icon: <Receipt size={20} />, label: 'Lịch sử thanh toán' },
+                { to: '/pricing', icon: <CreditCard size={20} />, label: 'Nâng cấp Gói' },
+              ]
+            },
+            {
               label: 'Hệ thống',
               links: [
                 { to: '/student/mobile', icon: <Smartphone size={20} />, label: 'Tải ứng dụng' },
-                { to: '/pricing', icon: <CreditCard size={20} />, label: 'Nâng cấp Gói' },
               ]
             },
           ]

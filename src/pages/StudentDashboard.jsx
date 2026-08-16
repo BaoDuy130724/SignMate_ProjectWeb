@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Smartphone, Download, LogOut, Flame, Target, Trophy, 
   Map, Calendar, ArrowRight, Zap, CheckCircle2, Loader2, 
-  TrendingUp, Award, PlayCircle, Star, QrCode, Crown, Sparkles
+  TrendingUp, Award, PlayCircle, Star, QrCode, Crown, Sparkles, Receipt
 } from 'lucide-react';
 import { dashboardApi, subscriptionApi, authApi, enrollmentsApi } from '../services/api';
 
@@ -167,11 +168,24 @@ const StudentDashboard = () => {
     );
   };
 
+  const rawCenterId = localStorage.getItem('centerId');
+  const isB2BStudent = Boolean(rawCenterId && rawCenterId !== 'null' && rawCenterId !== 'undefined' && rawCenterId !== '' && rawCenterId !== '0');
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      <div className="page-header" style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 900, marginBottom: '8px' }}>Rất vui được gặp lại, {displayName}! 👋</h1>
-        <p style={{ fontSize: '16px', color: 'var(--gray-500)', fontWeight: 600 }}>Hôm nay là một ngày tuyệt vời để tiếp tục hành trình Sign Language.</p>
+      <div className="page-header" style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '32px', fontWeight: 900, marginBottom: '8px' }}>Rất vui được gặp lại, {displayName}! 👋</h1>
+          <p style={{ fontSize: '16px', color: 'var(--gray-500)', fontWeight: 600, margin: 0 }}>Hôm nay là một ngày tuyệt vời để tiếp tục hành trình Sign Language.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <Link to="/student/transactions" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 700 }}>
+            <Receipt size={18} /> Lịch sử thanh toán
+          </Link>
+          <Link to="/pricing" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontWeight: 700 }}>
+            <Zap size={18} /> Nâng cấp
+          </Link>
+        </div>
       </div>
 
       {/* Dynamic Subscription Banner */}

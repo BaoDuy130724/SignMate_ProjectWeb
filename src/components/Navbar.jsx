@@ -1,16 +1,20 @@
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { User, LogOut, Layout, KeyRound, UserPlus } from 'lucide-react';
+import { User, LogOut, Layout, KeyRound, UserPlus, Receipt } from 'lucide-react';
 import logoImg from '../assets/EXE201/logo.02-04.png';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const role = localStorage.getItem('userRole');
+  const rawCenterId = localStorage.getItem('centerId');
+  const isB2B = Boolean(rawCenterId && rawCenterId !== 'null' && rawCenterId !== 'undefined' && rawCenterId !== '' && rawCenterId !== '0');
+  const isB2CStudent = (!role || role === 'Student' || role === 'Learner') && !isB2B;
   const fullName = localStorage.getItem('fullName') || 'User';
   const isLoggedIn = !!localStorage.getItem('accessToken');
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('userRole');
     localStorage.removeItem('fullName');
     localStorage.removeItem('centerId');
@@ -22,7 +26,7 @@ const Navbar = () => {
     if (role === 'SuperAdmin') return '/admin';
     if (role === 'CenterAdmin') return '/center';
     if (role === 'Teacher') return '/teacher';
-    if (role === 'Student') return '/student';
+    if (role === 'Student' || role === 'Learner') return '/student';
     return '/';
   };
 
@@ -50,15 +54,20 @@ const Navbar = () => {
 
         <div className="navbar-actions">
           {isLoggedIn ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'var(--gray-50)', borderRadius: 'var(--radius-full)', fontSize: '14px', fontWeight: 700, color: 'var(--primary)' }}>
-                <User size={16} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', background: 'var(--gray-50)', borderRadius: 'var(--radius-full)', fontSize: '13px', fontWeight: 700, color: 'var(--primary)' }}>
+                <User size={15} />
                 {fullName}
               </div>
-              <Link to={getDashboardPath()} className="btn btn-primary btn-sm">
-                <Layout size={16} style={{ marginRight: '6px' }} /> Dashboard
+              {(!role || role === 'Student' || role === 'Learner') && (
+                <Link to="/student/transactions" className="btn btn-outline btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }} title="Lịch sử giao dịch">
+                  <Receipt size={15} /> Lịch sử GD
+                </Link>
+              )}
+              <Link to={getDashboardPath()} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                <Layout size={15} /> Dashboard
               </Link>
-              <button onClick={handleLogout} className="btn btn-outline btn-sm" style={{ border: 'none', background: 'transparent', padding: '8px' }}>
+              <button onClick={handleLogout} className="btn btn-outline btn-sm" title="Đăng xuất" style={{ border: 'none', background: 'transparent', padding: '8px' }}>
                 <LogOut size={18} color="var(--gray-400)" />
               </button>
             </div>
