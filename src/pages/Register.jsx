@@ -14,7 +14,6 @@ const RegisterPage = ({ setRole }) => {
   const [otpCode, setOtpCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
 
@@ -35,7 +34,6 @@ const RegisterPage = ({ setRole }) => {
     setLoading(true);
     try {
       await authApi.sendRegisterOtp(email);
-      setOtpSent(true);
       setStep(2);
     } catch (err) {
       setError(err.message || 'Không thể gửi mã OTP. Vui lòng thử lại.');

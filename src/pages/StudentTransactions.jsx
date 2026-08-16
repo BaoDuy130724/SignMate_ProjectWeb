@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  CreditCard,
   Calendar,
   Search,
   CheckCircle2,
   Clock,
+  XCircle,
   AlertCircle,
   Loader2,
-  ArrowRight,
   FileText,
   RefreshCw,
   Sparkles,
@@ -20,11 +19,217 @@ import {
   ShieldCheck,
   Zap,
   TrendingUp,
-  Receipt,
-  Download,
-  ExternalLink
+  Receipt
 } from 'lucide-react';
 import { subscriptionApi, authApi } from '../services/api';
+
+const getStatusBadge = (status) => {
+  const st = (status || '').toUpperCase();
+  switch (st) {
+    case 'PAID':
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          padding: '4px 10px', borderRadius: '20px',
+          fontSize: '12px', fontWeight: 700,
+          background: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0'
+        }}>
+          <CheckCircle2 size={13} /> Thành công
+        </span>
+      );
+    case 'PENDING':
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          padding: '4px 10px', borderRadius: '20px',
+          fontSize: '12px', fontWeight: 700,
+          background: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A'
+        }}>
+          <Clock size={13} /> Chờ thanh toán
+        </span>
+      );
+    case 'EXPIRED':
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          padding: '4px 10px', borderRadius: '20px',
+          fontSize: '12px', fontWeight: 700,
+          background: '#F3F4F6', color: '#4B5563', border: '1px solid #E5E7EB'
+        }}>
+          <XCircle size={13} /> Hết hạn
+        </span>
+      );
+    case 'CANCELLED':
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          padding: '4px 10px', borderRadius: '20px',
+          fontSize: '12px', fontWeight: 700,
+          background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA'
+        }}>
+          <XCircle size={13} /> Đã hủy
+        </span>
+      );
+    case 'FREE':
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          padding: '4px 10px', borderRadius: '20px',
+          fontSize: '12px', fontWeight: 700,
+          background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE'
+        }}>
+          <Sparkles size={13} /> Miễn phí
+        </span>
+      );
+    default:
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          padding: '4px 10px', borderRadius: '20px',
+          fontSize: '12px', fontWeight: 700,
+          background: 'var(--gray-100)', color: 'var(--gray-600)'
+        }}>
+          {status}
+        </span>
+      );
+  }
+};
+
+const formatOrderCode = (tx) => {
+  if (tx.orderCode) return `#ORD-${tx.orderCode}`;
+  const dt = tx.startDate ? new Date(tx.startDate) : new Date();
+  const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
+  return `#SM-${ymd}`;
+};
+
+// Receipt Modal Subcomponent
+const StudentReceiptModal = ({ tx, currentUser, onClose }) => {
+  if (!tx) return null;
+  const price = Number(tx.priceVnd) || 0;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.65)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '20px',
+        maxWidth: '560px',
+        width: '100%',
+        overflow: 'hidden',
+        boxShadow: 'var(--shadow-xl)',
+        animation: 'fadeIn 0.2s ease-out'
+      }}>
+        {/* Modal Header */}
+        <div style={{
+          background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+          color: 'white',
+          padding: '22px 28px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Receipt size={24} />
+            <div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'white' }}>BIÊN LAI ĐIỆN TỬ</h3>
+              <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>SignMate Education Platform</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div style={{ padding: '28px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--gray-100)' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700, textTransform: 'uppercase' }}>MÃ ĐƠN HÀNG</div>
+              <div style={{ fontSize: '16px', fontWeight: 900, color: 'var(--primary-dark)', marginTop: '2px' }}>
+                {formatOrderCode(tx)}
+              </div>
+            </div>
+            <div>{getStatusBadge(tx.status)}</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>KHÁCH HÀNG</div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', marginTop: '2px' }}>
+                {currentUser?.fullName || 'Học viên'}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>{currentUser?.email}</div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>PHƯƠNG THỨC</div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', marginTop: '2px' }}>
+                PayOS (VietQR / Chuyển khoản)
+              </div>
+            </div>
+          </div>
+
+          {/* Items Breakdown */}
+          <div style={{ background: 'var(--gray-50)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+              <span style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{tx.planName} ({tx.planType})</span>
+              <span style={{ fontWeight: 800, color: 'var(--text-dark)' }}>{price.toLocaleString('vi-VN')} đ</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--gray-500)', marginBottom: '4px' }}>
+              <span>Ngày kích hoạt:</span>
+              <span>{tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--gray-500)' }}>
+              <span>Thời hạn đến:</span>
+              <span>{tx.endDate ? new Date(tx.endDate).toLocaleDateString('vi-VN') : '—'}</span>
+            </div>
+
+            <div style={{ borderTop: '1px dashed var(--gray-200)', marginTop: '12px', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-dark)' }}>TỔNG THANH TOÁN:</span>
+              <span style={{ fontWeight: 900, fontSize: '18px', color: 'var(--primary-dark)' }}>
+                {price.toLocaleString('vi-VN')} đ
+              </span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => window.print()}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Printer size={15} /> In biên lai
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onClose}
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const StudentTransactions = () => {
   const navigate = useNavigate();
@@ -54,7 +259,7 @@ const StudentTransactions = () => {
         toDate: customTo ? new Date(customTo + 'T23:59:59').toISOString() : null
       };
     }
-    const days = parseInt(timePreset, 10) || 30;
+    const days = Number.parseInt(timePreset, 10) || 30;
     const from = new Date();
     from.setDate(now.getDate() - days);
     from.setHours(0, 0, 0, 0);
@@ -139,86 +344,6 @@ const StudentTransactions = () => {
     return { totalSpent, paidCount, pendingCount, latestTx };
   }, [transactions]);
 
-  // Format Display Order Code (NO RAW DB ID)
-  const formatOrderCode = (tx) => {
-    if (tx.orderCode) return `#ORD-${tx.orderCode}`;
-    const dt = tx.startDate ? new Date(tx.startDate) : new Date();
-    const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
-    return `#SM-${ymd}`;
-  };
-
-  const getStatusBadge = (status) => {
-    const st = (status || '').toUpperCase();
-    switch (st) {
-      case 'PAID':
-        return (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: '20px',
-            fontSize: '12px', fontWeight: 700,
-            background: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0'
-          }}>
-            <CheckCircle2 size={13} /> Thành công
-          </span>
-        );
-      case 'PENDING':
-        return (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: '20px',
-            fontSize: '12px', fontWeight: 700,
-            background: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A'
-          }}>
-            <Clock size={13} /> Chờ thanh toán
-          </span>
-        );
-      case 'EXPIRED':
-        return (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: '20px',
-            fontSize: '12px', fontWeight: 700,
-            background: '#F3F4F6', color: '#4B5563', border: '1px solid #E5E7EB'
-          }}>
-            <XCircle size={13} /> Hết hạn
-          </span>
-        );
-      case 'CANCELLED':
-        return (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: '20px',
-            fontSize: '12px', fontWeight: 700,
-            background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA'
-          }}>
-            <XCircle size={13} /> Đã hủy
-          </span>
-        );
-      case 'FREE':
-        return (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: '20px',
-            fontSize: '12px', fontWeight: 700,
-            background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE'
-          }}>
-            <Sparkles size={13} /> Miễn phí
-          </span>
-        );
-      default:
-        return (
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: '20px',
-            fontSize: '12px', fontWeight: 700,
-            background: 'var(--gray-100)', color: 'var(--gray-600)'
-          }}>
-            {status}
-          </span>
-        );
-    }
-  };
-
   // If user is B2B Student
   if (isB2B) {
     return (
@@ -238,7 +363,7 @@ const StudentTransactions = () => {
           <p style={{ color: 'var(--gray-600)', fontSize: '15px', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 28px' }}>
             Tài khoản của bạn trực thuộc <strong>Trung tâm Đào tạo</strong>. Toàn bộ gói cước, quyền lợi học tập và chi phí được trung tâm quản lý và chi trả tập trung.
           </p>
-          <button className="btn btn-primary" onClick={() => navigate('/student')}>
+          <button type="button" className="btn btn-primary" onClick={() => navigate('/student')}>
             Quay lại Lộ trình học tập
           </button>
         </div>
@@ -536,278 +661,171 @@ const StudentTransactions = () => {
 
       {/* Main Transactions Table Container */}
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '14px' }}>
-            <Loader2 className="spinning" size={36} color="var(--primary)" />
-            <span style={{ color: 'var(--gray-500)', fontSize: '14px', fontWeight: 600 }}>Đang tổng hợp dữ liệu giao dịch...</span>
-          </div>
-        ) : error ? (
-          <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--red)' }}>
-            <AlertCircle size={36} style={{ marginBottom: '12px' }} />
-            <p style={{ fontWeight: 600, marginBottom: '16px' }}>{error}</p>
-            <button className="btn btn-outline" onClick={loadData}>Thử lại</button>
-          </div>
-        ) : filteredList.length === 0 ? (
-          <div style={{ padding: '70px 20px', textAlign: 'center' }}>
-            <Receipt size={48} style={{ marginBottom: '16px', color: 'var(--gray-300)' }} />
-            <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-dark)', marginBottom: '6px' }}>
-              Chưa có giao dịch trong khoảng thời gian này
-            </h3>
-            <p style={{ fontSize: '13px', color: 'var(--gray-500)', maxWidth: '420px', margin: '0 auto 20px' }}>
-              Bạn có thể mở rộng bộ lọc thời gian hoặc khám phá các gói học để nhận ưu đãi đặc biệt từ SignMate.
-            </p>
-            <Link to="/pricing" className="btn btn-primary" style={{ padding: '10px 22px', fontSize: '13px' }}>
-              Xem bảng giá gói cước
-            </Link>
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: 'var(--gray-50)', borderBottom: '2px solid var(--gray-100)' }}>
-                  <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Mã đơn hàng
-                  </th>
-                  <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Gói dịch vụ
-                  </th>
-                  <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Số tiền
-                  </th>
-                  <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Thời gian giao dịch
-                  </th>
-                  <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    Trạng thái
-                  </th>
-                  <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredList.map((tx, idx) => {
-                  const isPending = (tx.status || '').toUpperCase() === 'PENDING';
-                  const orderCodeDisplay = formatOrderCode(tx);
-                  const price = Number(tx.priceVnd) || 0;
+        {(() => {
+          if (loading) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '14px' }}>
+                <Loader2 className="spinning" size={36} color="var(--primary)" />
+                <span style={{ color: 'var(--gray-500)', fontSize: '14px', fontWeight: 600 }}>Đang tổng hợp dữ liệu giao dịch...</span>
+              </div>
+            );
+          }
+          if (error) {
+            return (
+              <div style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--red)' }}>
+                <AlertCircle size={36} style={{ marginBottom: '12px' }} />
+                <p style={{ fontWeight: 600, marginBottom: '16px' }}>{error}</p>
+                <button type="button" className="btn btn-outline" onClick={loadData}>Thử lại</button>
+              </div>
+            );
+          }
+          if (filteredList.length === 0) {
+            return (
+              <div style={{ padding: '70px 20px', textAlign: 'center' }}>
+                <Receipt size={48} style={{ marginBottom: '16px', color: 'var(--gray-300)' }} />
+                <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-dark)', marginBottom: '6px' }}>
+                  Chưa có giao dịch trong khoảng thời gian này
+                </h3>
+                <p style={{ fontSize: '13px', color: 'var(--gray-500)', maxWidth: '420px', margin: '0 auto 20px' }}>
+                  Bạn có thể mở rộng bộ lọc thời gian hoặc khám phá các gói học để nhận ưu đãi đặc biệt từ SignMate.
+                </p>
+                <Link to="/pricing" className="btn btn-primary" style={{ padding: '10px 22px', fontSize: '13px' }}>
+                  Xem bảng giá gói cước
+                </Link>
+              </div>
+            );
+          }
+          return (
+            <div className="table-responsive">
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: 'var(--gray-50)', borderBottom: '2px solid var(--gray-100)' }}>
+                    <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Mã đơn hàng
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Gói dịch vụ
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Số tiền
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Thời gian giao dịch
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Trạng thái
+                    </th>
+                    <th style={{ padding: '14px 20px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'right' }}>
+                      Thao tác
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredList.map((tx) => {
+                    const isPending = (tx.status || '').toUpperCase() === 'PENDING';
+                    const orderCodeDisplay = formatOrderCode(tx);
+                    const price = Number(tx.priceVnd) || 0;
+                    const rowKey = tx.orderCode ? `tx-${tx.orderCode}` : `tx-sub-${tx.id || tx.startDate}`;
 
-                  return (
-                    <tr
-                      key={idx}
-                      style={{
-                        borderBottom: '1px solid var(--gray-100)',
-                        transition: 'background 0.15s ease'
-                      }}
-                    >
-                      {/* Mã đơn hàng (Clean, NO DB ID) */}
-                      <td style={{ padding: '14px 20px' }}>
-                        <div style={{ fontWeight: 800, color: 'var(--primary-dark)', fontSize: '14px' }}>
-                          {orderCodeDisplay}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>
-                          Cổng PayOS / VietQR
-                        </div>
-                      </td>
-
-                      {/* Gói dịch vụ */}
-                      <td style={{ padding: '14px 20px' }}>
-                        <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-dark)' }}>
-                          {tx.planName || 'Gói học tập'}
-                        </div>
-                        <span className={`badge ${tx.planType === 'Pro' ? 'badge-yellow' : 'badge-gray'}`} style={{ fontSize: '10px', marginTop: '3px' }}>
-                          {tx.planType || 'Standard'}
-                        </span>
-                      </td>
-
-                      {/* Số tiền */}
-                      <td style={{ padding: '14px 20px', fontWeight: 800, fontSize: '15px', color: price > 0 ? 'var(--text-dark)' : 'var(--gray-500)' }}>
-                        {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : '0 đ (Miễn phí)'}
-                      </td>
-
-                      {/* Thời gian */}
-                      <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--gray-600)' }}>
-                        <div>
-                          {tx.startDate
-                            ? new Date(tx.startDate).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
-                            : '—'}
-                        </div>
-                        {tx.endDate && (
-                          <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>
-                            Đến: {new Date(tx.endDate).toLocaleDateString('vi-VN')}
+                    return (
+                      <tr
+                        key={rowKey}
+                        style={{
+                          borderBottom: '1px solid var(--gray-100)',
+                          transition: 'background 0.15s ease'
+                        }}
+                      >
+                        {/* Mã đơn hàng (Clean, NO DB ID) */}
+                        <td style={{ padding: '14px 20px' }}>
+                          <div style={{ fontWeight: 800, color: 'var(--primary-dark)', fontSize: '14px' }}>
+                            {orderCodeDisplay}
                           </div>
-                        )}
-                      </td>
+                          <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>
+                            Cổng PayOS / VietQR
+                          </div>
+                        </td>
 
-                      {/* Trạng thái */}
-                      <td style={{ padding: '14px 20px' }}>
-                        {getStatusBadge(tx.status)}
-                      </td>
+                        {/* Gói dịch vụ */}
+                        <td style={{ padding: '14px 20px' }}>
+                          <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-dark)' }}>
+                            {tx.planName || 'Gói học tập'}
+                          </div>
+                          <span className={`badge ${tx.planType === 'Pro' ? 'badge-yellow' : 'badge-gray'}`} style={{ fontSize: '10px', marginTop: '3px' }}>
+                            {tx.planType || 'Standard'}
+                          </span>
+                        </td>
 
-                      {/* Thao tác */}
-                      <td style={{ padding: '14px 20px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                          {isPending && tx.orderCode && (
+                        {/* Số tiền */}
+                        <td style={{ padding: '14px 20px', fontWeight: 800, fontSize: '15px', color: price > 0 ? 'var(--text-dark)' : 'var(--gray-500)' }}>
+                          {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : '0 đ (Miễn phí)'}
+                        </td>
+
+                        {/* Thời gian */}
+                        <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--gray-600)' }}>
+                          <div>
+                            {tx.startDate
+                              ? new Date(tx.startDate).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
+                              : '—'}
+                          </div>
+                          {tx.endDate && (
+                            <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>
+                              Đến: {new Date(tx.endDate).toLocaleDateString('vi-VN')}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Trạng thái */}
+                        <td style={{ padding: '14px 20px' }}>
+                          {getStatusBadge(tx.status)}
+                        </td>
+
+                        {/* Thao tác */}
+                        <td style={{ padding: '14px 20px', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                            {isPending && tx.orderCode && (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={verifyingCode === tx.orderCode}
+                                onClick={() => handleVerify(tx.orderCode)}
+                                style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="Kiểm tra thanh toán từ PayOS"
+                              >
+                                {verifyingCode === tx.orderCode ? (
+                                  <>
+                                    <Loader2 size={12} className="spinning" /> Kiểm tra...
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCw size={12} /> Kiểm tra TT
+                                  </>
+                                )}
+                              </button>
+                            )}
+
                             <button
                               type="button"
-                              className="btn btn-primary"
-                              disabled={verifyingCode === tx.orderCode}
-                              onClick={() => handleVerify(tx.orderCode)}
+                              className="btn btn-outline"
+                              onClick={() => setSelectedTx(tx)}
                               style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              title="Kiểm tra thanh toán từ PayOS"
                             >
-                              {verifyingCode === tx.orderCode ? (
-                                <>
-                                  <Loader2 size={12} className="spinning" /> Kiểm tra...
-                                </>
-                              ) : (
-                                <>
-                                  <RefreshCw size={12} /> Kiểm tra TT
-                                </>
-                              )}
+                              <FileText size={13} /> Biên lai
                             </button>
-                          )}
-
-                          <button
-                            type="button"
-                            className="btn btn-outline"
-                            onClick={() => setSelectedTx(tx)}
-                            style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <FileText size={13} /> Biên lai
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Electronic Receipt / Invoice Modal */}
       {selectedTx && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.65)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '20px',
-            maxWidth: '560px',
-            width: '100%',
-            overflow: 'hidden',
-            boxShadow: 'var(--shadow-xl)',
-            animation: 'fadeIn 0.2s ease-out'
-          }}>
-            {/* Modal Header */}
-            <div style={{
-              background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-              color: 'white',
-              padding: '22px 28px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Receipt size={24} />
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'white' }}>BIÊN LAI ĐIỆN TỬ</h3>
-                  <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>SignMate Education Platform</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedTx(null)}
-                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div style={{ padding: '28px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--gray-100)' }}>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700, textTransform: 'uppercase' }}>MÃ ĐƠN HÀNG</div>
-                  <div style={{ fontSize: '16px', fontWeight: 900, color: 'var(--primary-dark)', marginTop: '2px' }}>
-                    {formatOrderCode(selectedTx)}
-                  </div>
-                </div>
-                <div>{getStatusBadge(selectedTx.status)}</div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>KHÁCH HÀNG</div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', marginTop: '2px' }}>
-                    {currentUser?.fullName || 'Học viên'}
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>{currentUser?.email}</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>PHƯƠNG THỨC</div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', marginTop: '2px' }}>
-                    PayOS (VietQR / Chuyển khoản)
-                  </div>
-                </div>
-              </div>
-
-              {/* Items Breakdown */}
-              <div style={{ background: 'var(--gray-50)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
-                  <span style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{selectedTx.planName} ({selectedTx.planType})</span>
-                  <span style={{ fontWeight: 800, color: 'var(--text-dark)' }}>{(Number(selectedTx.priceVnd) || 0).toLocaleString('vi-VN')} đ</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--gray-500)', marginBottom: '4px' }}>
-                  <span>Ngày kích hoạt:</span>
-                  <span>{selectedTx.startDate ? new Date(selectedTx.startDate).toLocaleDateString('vi-VN') : '—'}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--gray-500)' }}>
-                  <span>Thời hạn đến:</span>
-                  <span>{selectedTx.endDate ? new Date(selectedTx.endDate).toLocaleDateString('vi-VN') : '—'}</span>
-                </div>
-
-                <div style={{ borderTop: '1px dashed var(--gray-200)', marginTop: '12px', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-dark)' }}>TỔNG THANH TOÁN:</span>
-                  <span style={{ fontWeight: 900, fontSize: '18px', color: 'var(--primary-dark)' }}>
-                    {(Number(selectedTx.priceVnd) || 0).toLocaleString('vi-VN')} đ
-                  </span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => window.print()}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <Printer size={15} /> In biên lai
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => setSelectedTx(null)}
-                >
-                  Đóng
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <StudentReceiptModal tx={selectedTx} currentUser={currentUser} onClose={() => setSelectedTx(null)} />
       )}
     </div>
   );

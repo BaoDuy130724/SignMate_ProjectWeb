@@ -114,8 +114,8 @@ const StudentMobilePlaceholder = (
       <h2 style={{ color: 'white', marginBottom: '16px' }}>Trải nghiệm AI tốt nhất trên di động</h2>
       <p style={{ maxWidth: '500px', margin: '0 auto 40px', opacity: 0.9 }}>Quét mã QR trên Dashboard để bắt đầu hành trình ký hiệu cùng chúng tôi!</p>
       <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-        <button className="btn btn-white">iOS App Store</button>
-        <button className="btn btn-white">Google Play Store</button>
+        <button type="button" className="btn btn-white">iOS App Store</button>
+        <button type="button" className="btn btn-white">Google Play Store</button>
       </div>
     </div>
   </>

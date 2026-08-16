@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  CreditCard,
   CheckCircle2,
   ShieldCheck,
   Zap,
@@ -22,6 +21,158 @@ import {
 } from 'lucide-react';
 import { centersApi, subscriptionApi } from '../services/api';
 
+const getStatusBadge = (status) => {
+  const st = (status || '').toUpperCase();
+  switch (st) {
+    case 'PAID':
+      return (
+        <span className="badge badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+          <CheckCircle2 size={12} /> Đã thanh toán
+        </span>
+      );
+    case 'PENDING':
+      return (
+        <span className="badge badge-yellow" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+          <Clock size={12} /> Chờ thanh toán
+        </span>
+      );
+    case 'EXPIRED':
+      return (
+        <span className="badge badge-gray" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+          <XCircle size={12} /> Hết hạn
+        </span>
+      );
+    case 'CANCELLED':
+      return (
+        <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+          <XCircle size={12} /> Đã hủy
+        </span>
+      );
+    case 'FREE':
+      return (
+        <span className="badge badge-blue" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
+          <Sparkles size={12} /> Miễn phí
+        </span>
+      );
+    default:
+      return <span className="badge badge-gray">{status}</span>;
+  }
+};
+
+const formatOrderCode = (tx) => {
+  if (tx.orderCode) return `#ORD-${tx.orderCode}`;
+  const dt = tx.startDate ? new Date(tx.startDate) : new Date();
+  const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
+  return `#SM-${ymd}`;
+};
+
+// Receipt Modal Component
+const CenterReceiptModal = ({ tx, onClose }) => {
+  if (!tx) return null;
+  const price = Number(tx.priceVnd) || 0;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.65)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '20px',
+        maxWidth: '520px',
+        width: '100%',
+        overflow: 'hidden',
+        boxShadow: 'var(--shadow-xl)'
+      }}>
+        <div style={{
+          background: 'linear-gradient(135deg, var(--text-dark) 0%, #1e1b4b 100%)',
+          color: 'white',
+          padding: '20px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Receipt size={22} color="var(--yellow)" />
+            <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: 'white' }}>HÓA ĐƠN GIAO DỊCH</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--gray-100)' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>MÃ GIAO DỊCH</div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--primary-dark)', marginTop: '2px' }}>
+                {formatOrderCode(tx)}
+              </div>
+            </div>
+            <div>{getStatusBadge(tx.status)}</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px', fontSize: '13px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>NGƯỜI DÙNG / TRUNG TÂM</div>
+              <div style={{ fontWeight: 700, marginTop: '2px' }}>{tx.userFullName || '—'}</div>
+              <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>{tx.email}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>GÓI DỊCH VỤ</div>
+              <div style={{ fontWeight: 700, marginTop: '2px' }}>{tx.planName} ({tx.planType})</div>
+              <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>
+                {tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--gray-50)', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 700, fontSize: '14px' }}>Tổng số tiền:</span>
+              <span style={{ fontWeight: 900, fontSize: '18px', color: 'var(--primary-dark)' }}>
+                {price > 0 ? `${price.toLocaleString('vi-VN')}đ` : '0đ'}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => window.print()}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            >
+              <Printer size={14} /> In hóa đơn
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onClose}
+              style={{ fontSize: '13px' }}
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CenterSubscription = () => {
   const [subscription, setSubscription] = useState(null);
   const [stats, setStats] = useState(null);
@@ -40,7 +191,28 @@ const CenterSubscription = () => {
 
   const centerId = localStorage.getItem('centerId');
 
-  // Mua thêm/gia hạn = thanh toán gói B2B qua PayOS (cùng luồng PricingPage).
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [sub, allPlans, centerStats] = await Promise.all([
+        subscriptionApi.getMyPlan().catch(() => null),
+        subscriptionApi.getPlans().catch(() => []),
+        centerId ? centersApi.getStats(centerId).catch(() => null) : Promise.resolve(null)
+      ]);
+
+      setSubscription(sub);
+      const b2b = Array.isArray(allPlans) ? allPlans.find(p => p.type === 'B2B') : null;
+      setB2bPlan(b2b);
+      setStats(centerStats);
+    } catch (err) {
+      setError(err.message || 'Không thể tải thông tin gói cước.');
+    } finally {
+      setLoading(false);
+    }
+  }, [centerId]);
+
+  // Mua thêm/gia hạn = thanh toán gói B2B qua PayOS
   const handleBuySeats = async () => {
     if (!b2bPlan) return;
     try {
@@ -64,7 +236,7 @@ const CenterSubscription = () => {
     setTxLoading(true);
     try {
       const now = new Date();
-      const days = parseInt(timePreset, 10) || 30;
+      const days = Number.parseInt(timePreset, 10) || 30;
       const from = new Date();
       from.setDate(now.getDate() - days);
 
@@ -73,129 +245,94 @@ const CenterSubscription = () => {
         toDate: now.toISOString(),
         status: statusFilter !== 'all' ? statusFilter : undefined
       };
+
       const data = await subscriptionApi.getAdminTransactions(params);
       setTransactions(Array.isArray(data) ? data : []);
     } catch {
-      // Fallback silently if no transactions
       setTransactions([]);
     } finally {
       setTxLoading(false);
     }
   }, [timePreset, statusFilter]);
 
-  const loadData = useCallback(async () => {
-    try {
-      if (!centerId) throw new Error('Không tìm thấy thông tin trung tâm.');
-      const [subData, dashboardData, plansData] = await Promise.all([
-        subscriptionApi.getMyPlan().catch(() => null),
-        centersApi.getDashboard(centerId),
-        subscriptionApi.getPlans()
-      ]);
-      setSubscription(subData);
-      setStats(dashboardData);
-      setB2bPlan((plansData || []).find(p => p.type === 'B2B') || null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [centerId]);
-
   useEffect(() => {
     loadData();
     loadTransactions();
   }, [loadData, loadTransactions]);
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '100px' }}><Loader2 className="spinning" /></div>;
+  const filteredTxList = useMemo(() => {
+    if (!searchTerm.trim()) return transactions;
+    const query = searchTerm.toLowerCase();
+    return transactions.filter(t => {
+      const orderCodeStr = t.orderCode ? String(t.orderCode).toLowerCase() : '';
+      const nameStr = (t.userFullName || '').toLowerCase();
+      const emailStr = (t.email || '').toLowerCase();
+      const planNameStr = (t.planName || '').toLowerCase();
+      return orderCodeStr.includes(query) || nameStr.includes(query) || emailStr.includes(query) || planNameStr.includes(query);
+    });
+  }, [transactions, searchTerm]);
 
-  if (error) return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '24px', color: 'var(--red, #dc2626)' }}>
-      <AlertCircle size={20} /> {error}
-    </div>
-  );
-
-  // Giá và tính năng lấy theo gói B2B trong hệ thống; fallback khớp dữ liệu seed.
-  const seatPrice = b2bPlan?.priceVnd ?? 79000;
-  let features = [
-    "Trang quản trị cho giáo viên",
-    "Quản lý danh sách lớp học",
-    "Theo dõi tiến độ học viên",
-    "Báo cáo kết quả học tập",
-    "Yêu cầu tối thiểu 20 học viên"
-  ];
-  try {
-    const parsed = JSON.parse(b2bPlan?.featuresJson || 'null');
-    if (Array.isArray(parsed) && parsed.length > 0) features = parsed;
-  } catch { /* giữ fallback */ }
-
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'PAID':
-        return (
-          <span className="badge" style={{ background: '#e8f5e9', color: '#2e7d32', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-            <CheckCircle2 size={13} /> Thành công
-          </span>
-        );
-      case 'PENDING':
-        return (
-          <span className="badge" style={{ background: '#fff3e0', color: '#e65100', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-            <Clock size={13} /> Chờ xử lý
-          </span>
-        );
-      case 'EXPIRED':
-        return (
-          <span className="badge" style={{ background: '#f5f5f5', color: '#757575', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-            <XCircle size={13} /> Hết hạn
-          </span>
-        );
-      case 'CANCELLED':
-        return (
-          <span className="badge" style={{ background: '#ffebee', color: '#c62828', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-            <XCircle size={13} /> Đã hủy
-          </span>
-        );
-      case 'FREE':
-        return (
-          <span className="badge" style={{ background: '#e0f2fe', color: '#0369a1', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
-            <Sparkles size={13} /> Miễn phí
-          </span>
-        );
-      default:
-        return <span className="badge badge-gray">{status}</span>;
+  let features = [];
+  if (b2bPlan?.featuresJson) {
+    try {
+      features = JSON.parse(b2bPlan.featuresJson);
+    } catch {
+      features = ['Quản lý lớp học', 'Báo cáo học viên', 'Hỗ trợ AI Feedback'];
     }
+  }
+
+  const seatPrice = b2bPlan?.priceVnd || 79000;
+
+  // Extract status indicators without nested ternaries
+  const getSubscriptionStatusColor = () => {
+    if (!subscription) return '#999';
+    return subscription.isActive ? 'var(--green, #10b981)' : 'var(--red, #dc2626)';
   };
 
-  const filteredTxList = transactions.filter(t => {
-    if (!searchTerm) return true;
-    const term = searchTerm.toLowerCase();
+  const getSubscriptionStatusLabel = () => {
+    if (!subscription) return 'Chưa kích hoạt';
+    return subscription.isActive ? 'Đang hoạt động' : 'Hết hạn';
+  };
+
+  if (loading) {
     return (
-      (t.userFullName || '').toLowerCase().includes(term) ||
-      (t.email || '').toLowerCase().includes(term) ||
-      (t.orderCode ? String(t.orderCode) : '').includes(term) ||
-      (t.planName || '').toLowerCase().includes(term)
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+        <Loader2 className="spinning" size={40} color="var(--primary)" />
+      </div>
     );
-  });
+  }
 
   return (
-    <>
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 className="page-title">Gói dịch vụ & Giao dịch Trung tâm</h1>
-          <p className="page-subtitle">Quản lý các giới hạn, thời hạn gói B2B và tra cứu lịch sử thanh toán</p>
-        </div>
-        <div className="badge badge-purple" style={{ padding: '8px 16px', fontSize: '14px', fontWeight: 800 }}>
-          {subscription?.planName || b2bPlan?.name || 'Gói Trung tâm (B2B)'}
-        </div>
+    <div>
+      <div className="page-header">
+        <h1 className="page-title">Quản lý Gói & Bản quyền Trung tâm</h1>
+        <p className="page-subtitle">Xem thông tin gói B2B, quản lý giới hạn học viên (seats) và lịch sử giao dịch</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px', marginBottom: '36px' }}>
+      {error && (
+        <div style={{ background: '#fee2e2', color: '#dc2626', padding: '12px 16px', borderRadius: '12px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertCircle size={18} /> {error}
+        </div>
+      )}
+
+      {/* Main Overview Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '32px', marginBottom: '32px' }}>
         <div>
-          <div className="card" style={{ background: 'linear-gradient(135deg, var(--white) 0%, #f4f0ff 100%)', border: 'none', marginBottom: '24px' }}>
-            <h3 style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <ShieldCheck size={24} color="var(--primary)" /> Thông tin Gói hiện tại
-            </h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+          <div className="card" style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <div>
+                <span className="badge badge-purple" style={{ marginBottom: '8px' }}>GÓI HIỆN TẠI</span>
+                <h2 style={{ fontSize: '24px', fontWeight: 800 }}>{subscription?.planName || 'Gói Trung tâm (B2B)'}</h2>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '13px', color: 'var(--gray-400)', fontWeight: 600 }}>Chi phí gói</span>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary)' }}>
+                  {(subscription?.priceVnd || seatPrice).toLocaleString('vi-VN')}đ / học viên
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', padding: '20px', background: 'var(--gray-50)', borderRadius: '16px' }}>
               <div>
                 <div style={{ color: 'var(--gray-400)', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>Tình trạng</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -203,10 +340,10 @@ const CenterSubscription = () => {
                     width: '12px', 
                     height: '12px', 
                     borderRadius: '50%', 
-                    background: subscription ? (subscription.isActive ? 'var(--green, #10b981)' : 'var(--red, #dc2626)') : '#999' 
+                    background: getSubscriptionStatusColor() 
                   }}></div>
                   <span style={{ fontWeight: 800, fontSize: '18px' }}>
-                    {subscription ? (subscription.isActive ? 'Đang hoạt động' : 'Hết hạn') : 'Chưa kích hoạt'}
+                    {getSubscriptionStatusLabel()}
                   </span>
                 </div>
               </div>
@@ -246,8 +383,8 @@ const CenterSubscription = () => {
           <div className="card">
             <h3 style={{ marginBottom: '20px' }}>Tính năng được bật</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              {features.map((f, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '12px', background: 'var(--gray-50)' }}>
+              {features.map((f) => (
+                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderRadius: '12px', background: 'var(--gray-50)' }}>
                   <div style={{ color: 'var(--green, #10b981)', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <CheckCircle2 size={18} />
                   </div>
@@ -270,12 +407,13 @@ const CenterSubscription = () => {
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                 {features.slice(0, 3).map((f, i) => (
-                   <li key={i} style={{ display: 'flex', gap: '10px' }}><CheckCircle2 size={16} color="var(--yellow)" /> {f}</li>
+                 {features.slice(0, 3).map((f) => (
+                   <li key={f} style={{ display: 'flex', gap: '10px' }}><CheckCircle2 size={16} color="var(--yellow)" /> {f}</li>
                  ))}
               </ul>
 
               <button
+                type="button"
                 className="btn btn-primary"
                 style={{ width: '100%', background: 'var(--yellow)', color: 'var(--text-dark)', fontWeight: 800, border: 'none' }}
                 onClick={handleBuySeats}
@@ -288,34 +426,34 @@ const CenterSubscription = () => {
            </div>
 
            <div style={{ marginTop: '24px', padding: '24px', borderRadius: '16px', border: '2px dashed var(--gray-200)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ color: 'var(--primary)' }}><Zap size={24} /></div>
+              <div style={{ background: 'var(--primary-light)', padding: '12px', borderRadius: '12px', color: 'var(--primary)' }}>
+                 <ShieldCheck size={28} />
+              </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '15px' }}>Cần thêm lượt seats?</div>
-                <div style={{ fontSize: '13px', color: 'var(--gray-400)' }}>Bạn có thể mua lẻ thêm seat với {seatPrice.toLocaleString('vi-VN')}đ/học viên/tháng mà không cần nâng cấp gói.</div>
+                 <div style={{ fontWeight: 800, fontSize: '15px' }}>Bảo mật & Hợp đồng Doanh nghiệp</div>
+                 <div style={{ fontSize: '13px', color: 'var(--gray-400)', marginTop: '4px' }}>Cần hóa đơn VAT đỏ hoặc thanh toán chuyển khoản doanh nghiệp? Liên hệ đội ngũ SignMate B2B.</div>
               </div>
            </div>
         </div>
       </div>
 
-      {/* Center Admin Transaction History Section */}
-      <div className="card" style={{ padding: '24px', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+      {/* Transaction History Section */}
+      <div className="card" style={{ marginTop: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-dark)' }}>
-              <Receipt size={22} color="var(--primary)" /> Lịch sử Giao dịch & Gói cước của Trung tâm
-            </h3>
-            <p style={{ color: 'var(--gray-400)', fontSize: '13px', marginTop: '4px' }}>
-              Theo dõi và kiểm soát toàn bộ giao dịch đăng ký gói trong phạm vi trung tâm
+            <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Lịch sử Giao dịch & Đăng ký Gói Trung tâm</h2>
+            <p style={{ color: 'var(--gray-400)', fontSize: '13px', marginTop: '4px', margin: 0 }}>
+              Tra cứu các giao dịch mua gói và gia hạn dịch vụ của trung tâm
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {/* Time Presets (Limit 1 month) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Filter Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '4px' }}>
               {[
                 { id: '7', label: '7 ngày' },
                 { id: '14', label: '14 ngày' },
-                { id: '30', label: '30 ngày (1 tháng)' }
+                { id: '30', label: '30 ngày' }
               ].map(p => (
                 <button
                   key={p.id}
@@ -323,7 +461,7 @@ const CenterSubscription = () => {
                   onClick={() => setTimePreset(p.id)}
                   style={{
                     padding: '5px 12px',
-                    borderRadius: 'var(--radius-full)',
+                    borderRadius: '20px',
                     border: timePreset === p.id ? '2px solid var(--primary)' : '1px solid var(--gray-200)',
                     background: timePreset === p.id ? 'var(--primary-light)' : 'white',
                     color: timePreset === p.id ? 'var(--primary-dark)' : 'var(--text)',
@@ -337,32 +475,28 @@ const CenterSubscription = () => {
               ))}
             </div>
 
-            {/* Status Filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="form-input"
-              style={{ padding: '5px 10px', fontSize: '12px', minWidth: '130px' }}
+              style={{ padding: '5px 10px', fontSize: '12px', height: '32px' }}
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="PAID">Đã thanh toán (PAID)</option>
               <option value="PENDING">Chờ xử lý (PENDING)</option>
               <option value="EXPIRED">Đã hết hạn (EXPIRED)</option>
-              <option value="CANCELLED">Đã hủy (CANCELLED)</option>
-              <option value="FREE">Miễn phí (FREE)</option>
             </select>
 
-            {/* Search */}
-            <div style={{ position: 'relative', minWidth: '180px' }}>
+            <div style={{ position: 'relative' }}>
               <input
                 type="text"
-                placeholder="Tìm học viên, mã đơn..."
+                placeholder="Tìm mã đơn, tên..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="form-input"
-                style={{ paddingLeft: '30px', paddingRight: '10px', paddingY: '4px', fontSize: '12px' }}
+                style={{ paddingLeft: '28px', paddingRight: '8px', height: '32px', fontSize: '12px', width: '160px' }}
               />
-              <Search size={14} color="var(--gray-400)" style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Search size={13} color="var(--gray-400)" style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)' }} />
             </div>
 
             <button
@@ -377,158 +511,90 @@ const CenterSubscription = () => {
           </div>
         </div>
 
-        {txLoading ? (
-          <div style={{ textAlign: 'center', padding: '50px' }}>
-            <Loader2 className="spinning" size={28} color="var(--primary)" />
-          </div>
-        ) : filteredTxList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--gray-400)', border: '1px dashed var(--gray-200)', borderRadius: 'var(--radius-md)' }}>
-            <FileText size={36} style={{ opacity: 0.3, marginBottom: '8px' }} />
-            <div style={{ fontSize: '14px', fontWeight: 600 }}>Không có dữ liệu giao dịch trong khoảng thời gian này</div>
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)' }}>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Mã đơn / ID</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Học viên / User</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Gói dịch vụ</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Số tiền</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Ngày kích hoạt</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Trạng thái</th>
-                  <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', textAlign: 'right' }}>Chi tiết</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTxList.map(tx => (
-                  <tr key={tx.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '13px' }}>
-                      {tx.orderCode ? `#${tx.orderCode}` : `#SUB-${tx.id}`}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-dark)' }}>{tx.userFullName || '—'}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{tx.email}</div>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontWeight: 600, fontSize: '13px' }}>{tx.planName}</div>
-                      <span className={`badge ${tx.planType === 'Pro' ? 'badge-purple' : 'badge-gray'}`} style={{ fontSize: '10px' }}>
-                        {tx.planType}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 800, fontSize: '13px', color: tx.priceVnd > 0 ? 'var(--primary-dark)' : 'var(--gray-500)' }}>
-                      {tx.priceVnd > 0 ? `${tx.priceVnd.toLocaleString('vi-VN')}đ` : '0đ'}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: '12px' }}>
-                      {tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      {getStatusBadge(tx.status)}
-                    </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        className="btn btn-outline"
-                        onClick={() => setSelectedTx(tx)}
-                        style={{ padding: '4px 10px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        <FileText size={12} /> Xem
-                      </button>
-                    </td>
+        {/* Render Transaction Table Content */}
+        {(() => {
+          if (txLoading) {
+            return (
+              <div style={{ textAlign: 'center', padding: '50px' }}>
+                <Loader2 className="spinning" size={28} color="var(--primary)" />
+              </div>
+            );
+          }
+          if (filteredTxList.length === 0) {
+            return (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--gray-400)', border: '1px dashed var(--gray-200)', borderRadius: 'var(--radius-md)' }}>
+                <FileText size={36} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                <div style={{ fontSize: '14px', fontWeight: 600 }}>Không có dữ liệu giao dịch trong khoảng thời gian này</div>
+              </div>
+            );
+          }
+          return (
+            <div className="table-responsive">
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)' }}>
+                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Mã đơn hàng</th>
+                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Học viên / User</th>
+                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Gói dịch vụ</th>
+                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Số tiền</th>
+                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Ngày kích hoạt</th>
+                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Trạng thái</th>
+                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', textAlign: 'right' }}>Chi tiết</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {filteredTxList.map((tx) => {
+                    const txKey = tx.orderCode ? `tx-${tx.orderCode}` : `tx-sub-${tx.id || tx.startDate}`;
+                    return (
+                      <tr key={txKey} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '13px', color: 'var(--primary-dark)' }}>
+                          {formatOrderCode(tx)}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-dark)' }}>{tx.userFullName || '—'}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{tx.email}</div>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: 600, fontSize: '13px' }}>{tx.planName}</div>
+                          <span className={`badge ${tx.planType === 'Pro' ? 'badge-purple' : 'badge-gray'}`} style={{ fontSize: '10px' }}>
+                            {tx.planType}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontWeight: 800, fontSize: '13px', color: tx.priceVnd > 0 ? 'var(--primary-dark)' : 'var(--gray-500)' }}>
+                          {tx.priceVnd > 0 ? `${tx.priceVnd.toLocaleString('vi-VN')}đ` : '0đ'}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: '12px' }}>
+                          {tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          {getStatusBadge(tx.status)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            onClick={() => setSelectedTx(tx)}
+                            style={{ padding: '4px 10px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <FileText size={12} /> Xem
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Transaction Detail Modal */}
       {selectedTx && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '20px'
-        }}>
-          <div className="card" style={{
-            maxWidth: '520px',
-            width: '100%',
-            padding: '32px',
-            borderRadius: 'var(--radius-xl)',
-            boxShadow: 'var(--shadow-lg)',
-            position: 'relative'
-          }}>
-            <button
-              type="button"
-              onClick={() => setSelectedTx(null)}
-              style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)' }}
-            >
-              <X size={20} />
-            </button>
-
-            <div style={{ textAlign: 'center', paddingBottom: '16px', borderBottom: '2px dashed var(--gray-200)' }}>
-              <div style={{ fontSize: '18px', fontWeight: 900, color: 'var(--primary-dark)' }}>
-                CHI TIẾT GIAO DỊCH TRUNG TÂM
-              </div>
-              <div style={{ marginTop: '12px' }}>
-                {getStatusBadge(selectedTx.status)}
-              </div>
-            </div>
-
-            <div style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--gray-400)' }}>Mã đơn hàng:</span>
-                <span style={{ fontWeight: 700 }}>{selectedTx.orderCode ? `#${selectedTx.orderCode}` : `#SUB-${selectedTx.id}`}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--gray-400)' }}>Học viên / Thành viên:</span>
-                <span style={{ fontWeight: 700 }}>{selectedTx.userFullName} ({selectedTx.email})</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--gray-400)' }}>Gói dịch vụ:</span>
-                <span style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>{selectedTx.planName} ({selectedTx.planType})</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--gray-400)' }}>Thời gian hiệu lực:</span>
-                <span>
-                  {selectedTx.startDate ? new Date(selectedTx.startDate).toLocaleDateString('vi-VN') : '—'} - {selectedTx.endDate ? new Date(selectedTx.endDate).toLocaleDateString('vi-VN') : '—'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--gray-100)', paddingTop: '12px', marginTop: '4px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 800 }}>Số tiền:</span>
-                <span style={{ fontSize: '18px', fontWeight: 900, color: 'var(--primary-dark)' }}>
-                  {selectedTx.priceVnd > 0 ? `${selectedTx.priceVnd.toLocaleString('vi-VN')}đ` : '0đ (Miễn phí)'}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => window.print()}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Printer size={15} /> In
-              </button>
-              <button type="button" className="btn btn-primary" onClick={() => setSelectedTx(null)}>
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
+        <CenterReceiptModal tx={selectedTx} onClose={() => setSelectedTx(null)} />
       )}
-    </>
+    </div>
   );
 };
 
 export default CenterSubscription;
-

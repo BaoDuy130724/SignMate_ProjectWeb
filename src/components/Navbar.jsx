@@ -6,9 +6,6 @@ import logoImg from '../assets/EXE201/logo.02-04.png';
 const Navbar = () => {
   const navigate = useNavigate();
   const role = localStorage.getItem('userRole');
-  const rawCenterId = localStorage.getItem('centerId');
-  const isB2B = Boolean(rawCenterId && rawCenterId !== 'null' && rawCenterId !== 'undefined' && rawCenterId !== '' && rawCenterId !== '0');
-  const isB2CStudent = (!role || role === 'Student' || role === 'Learner') && !isB2B;
   const fullName = localStorage.getItem('fullName') || 'User';
   const isLoggedIn = !!localStorage.getItem('accessToken');
 
@@ -67,7 +64,7 @@ const Navbar = () => {
               <Link to={getDashboardPath()} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
                 <Layout size={15} /> Dashboard
               </Link>
-              <button onClick={handleLogout} className="btn btn-outline btn-sm" title="Đăng xuất" style={{ border: 'none', background: 'transparent', padding: '8px' }}>
+              <button type="button" onClick={handleLogout} className="btn btn-outline btn-sm" title="Đăng xuất" style={{ border: 'none', background: 'transparent', padding: '8px' }}>
                 <LogOut size={18} color="var(--gray-400)" />
               </button>
             </div>

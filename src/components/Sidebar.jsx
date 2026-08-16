@@ -10,9 +10,6 @@ import {
 const notificationsLink = { to: '/notifications', icon: <Bell size={20} />, label: 'Thông báo' };
 
 const Sidebar = ({ role }) => {
-  const rawCenterId = localStorage.getItem('centerId');
-  const isB2BStudent = Boolean(rawCenterId && rawCenterId !== 'null' && rawCenterId !== 'undefined' && rawCenterId !== '' && rawCenterId !== '0');
-
   const getConfig = () => {
     switch (role) {
       case 'SuperAdmin':
@@ -160,6 +157,7 @@ const Sidebar = ({ role }) => {
 
       <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '2px solid var(--gray-100)', display: 'flex', justifyContent: 'center' }}>
         <button 
+          type="button"
           className="sidebar-link" 
           onClick={() => window.location.href = '/login'}
           title="Đăng xuất"

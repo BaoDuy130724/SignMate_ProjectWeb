@@ -42,7 +42,7 @@ const tryRefreshToken = () => {
       const body = await res.json();
       // Unpack ApiResponse<T> envelope if present
       const data = body && typeof body === 'object' && 'data' in body ? body.data : body;
-      if (!data || !data.accessToken) return false;
+      if (!data?.accessToken) return false;
       localStorage.setItem('accessToken', data.accessToken);
       if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
       return true;
@@ -452,7 +452,8 @@ export const subscriptionApi = {
     if (params.toDate) query.append('toDate', params.toDate);
     if (params.status) query.append('status', params.status);
     const qs = query.toString();
-    return get(`/subscription/my-history${qs ? `?${qs}` : ''}`);
+    const endpoint = qs ? `/subscription/my-history?${qs}` : '/subscription/my-history';
+    return get(endpoint);
   },
 
   getAdminTransactions: (params = {}) => {
@@ -462,7 +463,8 @@ export const subscriptionApi = {
     if (params.fromDate) query.append('fromDate', params.fromDate);
     if (params.toDate) query.append('toDate', params.toDate);
     const qs = query.toString();
-    return get(`/subscription/admin/transactions${qs ? `?${qs}` : ''}`);
+    const endpoint = qs ? `/subscription/admin/transactions?${qs}` : '/subscription/admin/transactions';
+    return get(endpoint);
   },
 
   getAll: () => get('/subscription/all'),

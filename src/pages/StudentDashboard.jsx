@@ -133,6 +133,7 @@ const StudentDashboard = () => {
             <p style={{ opacity: 0.85, fontSize: '14px', maxWidth: '450px', margin: 0 }}>Phân tích góc độ, hình dáng tay và phát hiện điểm yếu cần cải thiện.</p>
           </div>
           <button 
+            type="button"
             className="btn" 
             onClick={() => window.location.href = '/pricing'}
             style={{ background: 'white', color: '#7C3AED', fontWeight: 800, padding: '12px 24px', border: 'none', zIndex: 2 }}
@@ -157,6 +158,7 @@ const StudentDashboard = () => {
           <p style={{ opacity: 0.9, fontSize: '14px', maxWidth: '450px' }}>Học không giới hạn bài học, nhận phản hồi AI chi tiết và lộ trình cá nhân hóa 24/7.</p>
         </div>
         <button 
+          type="button"
           className="btn" 
           onClick={() => window.location.href = '/pricing'}
           style={{ background: 'var(--yellow)', color: 'var(--text-dark)', fontWeight: 800, padding: '12px 24px', border: 'none', zIndex: 2 }}
@@ -167,9 +169,6 @@ const StudentDashboard = () => {
       </div>
     );
   };
-
-  const rawCenterId = localStorage.getItem('centerId');
-  const isB2BStudent = Boolean(rawCenterId && rawCenterId !== 'null' && rawCenterId !== 'undefined' && rawCenterId !== '' && rawCenterId !== '0');
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -240,7 +239,7 @@ const StudentDashboard = () => {
            <p style={{ color: 'var(--gray-400)', fontSize: '15px' }}>
              Bạn đang đi đúng hướng! Hoàn thành thêm <strong>{stats?.totalLessons - stats?.lessonsCompleted || 0} bài</strong> nữa để thăng hạng nhé.
            </p>
-           <button className="btn btn-primary" style={{ marginTop: '20px', padding: '12px 32px' }} onClick={() => window.location.href = '/student/mobile'}>
+           <button type="button" className="btn btn-primary" style={{ marginTop: '20px', padding: '12px 32px' }} onClick={() => window.location.href = '/student/mobile'}>
              <PlayCircle size={18} style={{ marginRight: '8px' }} /> Tiếp tục bài học cuối
            </button>
         </div>
