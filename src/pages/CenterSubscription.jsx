@@ -16,7 +16,9 @@ import {
   FileText,
   X,
   Printer,
-  Receipt
+  Receipt,
+  Copy,
+  Check
 } from 'lucide-react';
 import { centersApi, subscriptionApi } from '../services/api';
 
@@ -62,7 +64,7 @@ const formatOrderCode = (tx) => {
   if (tx.orderCode) return `#ORD-${tx.orderCode}`;
   const dt = tx.startDate ? new Date(tx.startDate) : new Date();
   const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
-  return `#SM-${ymd}`;
+  return `#SM-${ymd}-${String(tx.id || '1').padStart(3, '0')}`;
 };
 
 // Receipt Modal Component
@@ -187,8 +189,38 @@ const CenterSubscription = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTx, setSelectedTx] = useState(null);
+  const [verifyingCode, setVerifyingCode] = useState(null);
+  const [copiedCode, setCopiedCode] = useState(null);
+  const [actionMessage, setActionMessage] = useState(null);
 
   const centerId = localStorage.getItem('centerId');
+
+  const handleCopyOrderCode = (code) => {
+    if (!code) return;
+    navigator.clipboard.writeText(String(code));
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const handleVerify = async (orderCode) => {
+    if (!orderCode) return;
+    setVerifyingCode(orderCode);
+    setActionMessage(null);
+    try {
+      const res = await subscriptionApi.verifyPayment(orderCode);
+      if (res && res.status === 'PAID') {
+        setActionMessage({ type: 'success', text: `Đơn hàng #${orderCode} đã xác nhận thanh toán thành công!` });
+      } else {
+        setActionMessage({ type: 'info', text: `Trạng thái PayOS: ${res?.status || 'Chưa hoàn tất'}` });
+      }
+      await Promise.all([loadData(), loadTransactions()]);
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Kiểm tra thất bại' });
+    } finally {
+      setVerifyingCode(null);
+      setTimeout(() => setActionMessage(null), 5000);
+    }
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -363,18 +395,18 @@ const CenterSubscription = () => {
                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
                     <Users size={18} color="var(--primary)" /> Giới hạn Học viên (Seats)
                  </div>
-                 <div style={{ fontWeight: 800 }}>{stats?.studentCount || 0} / {stats?.maxSeats || 50} seats</div>
+                 <div style={{ fontWeight: 800 }}>{stats?.totalStudents ?? stats?.studentCount ?? 0} / {stats?.maxSeats || 50} seats</div>
               </div>
               <div style={{ height: '16px', background: 'var(--gray-100)', borderRadius: '20px', overflow: 'hidden' }}>
                 <div style={{ 
-                  width: `${Math.min(100, ((stats?.studentCount || 0) / (stats?.maxSeats || 50)) * 100)}%`, 
+                  width: `${Math.min(100, (((stats?.totalStudents ?? stats?.studentCount ?? 0)) / (stats?.maxSeats || 50)) * 100)}%`, 
                   height: '100%', 
                   background: 'linear-gradient(90deg, var(--primary), var(--purple))',
                   borderRadius: '20px'
                 }}></div>
               </div>
               <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--gray-400)' }}>
-                Bạn đã sử dụng {Math.round(((stats?.studentCount || 0) / (stats?.maxSeats || 50)) * 100)}% dung lượng cho phép của gói hiện tại.
+                Bạn đã sử dụng {Math.round((((stats?.totalStudents ?? stats?.studentCount ?? 0)) / (stats?.maxSeats || 50)) * 100)}% dung lượng cho phép của gói hiện tại.
               </p>
             </div>
           </div>
@@ -510,6 +542,26 @@ const CenterSubscription = () => {
           </div>
         </div>
 
+        {/* Action message banner */}
+        {actionMessage && (
+          <div style={{
+            padding: '10px 16px',
+            borderRadius: '10px',
+            marginBottom: '16px',
+            fontSize: '13px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: actionMessage.type === 'success' ? '#d1fae5' : actionMessage.type === 'error' ? '#fee2e2' : '#e0f2fe',
+            color: actionMessage.type === 'success' ? '#047857' : actionMessage.type === 'error' ? '#b91c1c' : '#0369a1',
+            border: `1px solid ${actionMessage.type === 'success' ? '#6ee7b7' : actionMessage.type === 'error' ? '#fca5a5' : '#7dd3fc'}`
+          }}>
+            {actionMessage.type === 'success' ? <CheckCircle2 size={16} /> : actionMessage.type === 'error' ? <AlertCircle size={16} /> : <Clock size={16} />}
+            {actionMessage.text}
+          </div>
+        )}
+
         {/* Render Transaction Table Content */}
         {(() => {
           if (txLoading) {
@@ -533,50 +585,95 @@ const CenterSubscription = () => {
                 <thead>
                   <tr style={{ background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)' }}>
                     <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Mã đơn hàng</th>
-                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Học viên / User</th>
                     <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Gói dịch vụ</th>
                     <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Số tiền</th>
                     <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Ngày kích hoạt</th>
                     <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase' }}>Trạng thái</th>
-                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', textAlign: 'right' }}>Chi tiết</th>
+                    <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', textAlign: 'right' }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredTxList.map((tx) => {
                     const txKey = tx.orderCode ? `tx-${tx.orderCode}` : `tx-sub-${tx.id || tx.startDate}`;
+                    const isPending = (tx.status || '').toUpperCase() === 'PENDING';
+                    const orderCodeDisplay = formatOrderCode(tx);
+                    const codeToCopy = tx.orderCode ? String(tx.orderCode) : orderCodeDisplay;
+                    const isCopied = copiedCode === codeToCopy;
+
                     return (
                       <tr key={txKey} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                        <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '13px', color: 'var(--primary-dark)' }}>
-                          {formatOrderCode(tx)}
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontWeight: 800, fontSize: '13px', color: 'var(--primary-dark)' }}>
+                              {orderCodeDisplay}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyOrderCode(codeToCopy)}
+                              title={`Sao chép mã: ${codeToCopy}`}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '2px',
+                                color: isCopied ? '#10b981' : 'var(--gray-400)',
+                                display: 'inline-flex',
+                                alignItems: 'center'
+                              }}
+                            >
+                              {isCopied ? <Check size={13} /> : <Copy size={13} />}
+                            </button>
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{tx.orderCode ? 'Cổng PayOS' : 'Hệ thống'}</div>
                         </td>
                         <td style={{ padding: '12px 16px' }}>
-                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-dark)' }}>{tx.userFullName || '—'}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--gray-400)' }}>{tx.email}</div>
-                        </td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ fontWeight: 600, fontSize: '13px' }}>{tx.planName}</div>
-                          <span className={`badge ${tx.planType === 'Pro' ? 'badge-purple' : 'badge-gray'}`} style={{ fontSize: '10px' }}>
-                            {tx.planType}
+                          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--text-dark)' }}>{tx.planName || 'Gói Trung tâm'}</div>
+                          <span className="badge badge-purple" style={{ fontSize: '10px', marginTop: '2px' }}>
+                            {tx.planType || 'B2B'}
                           </span>
                         </td>
                         <td style={{ padding: '12px 16px', fontWeight: 800, fontSize: '13px', color: tx.priceVnd > 0 ? 'var(--primary-dark)' : 'var(--gray-500)' }}>
-                          {tx.priceVnd > 0 ? `${tx.priceVnd.toLocaleString('vi-VN')}đ` : '0đ'}
+                          {tx.priceVnd > 0 ? `${Number(tx.priceVnd).toLocaleString('vi-VN')}đ` : '0đ'}
                         </td>
                         <td style={{ padding: '12px 16px', fontSize: '12px' }}>
-                          {tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}
+                          <div>{tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}</div>
+                          {tx.endDate && (
+                            <div style={{ fontSize: '10px', color: 'var(--gray-400)' }}>
+                              Hạn: {new Date(tx.endDate).toLocaleDateString('vi-VN')}
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           {getStatusBadge(tx.status)}
                         </td>
                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                          <button
-                            type="button"
-                            className="btn btn-outline"
-                            onClick={() => setSelectedTx(tx)}
-                            style={{ padding: '4px 10px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                          >
-                            <FileText size={12} /> Xem
-                          </button>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                            {isPending && tx.orderCode && (
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={verifyingCode === tx.orderCode}
+                                onClick={() => handleVerify(tx.orderCode)}
+                                style={{ padding: '4px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="Kiểm tra trạng thái từ PayOS"
+                              >
+                                {verifyingCode === tx.orderCode ? (
+                                  <Loader2 size={11} className="spinning" />
+                                ) : (
+                                  <RefreshCw size={11} />
+                                )}
+                                Kiểm tra
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn btn-outline"
+                              onClick={() => setSelectedTx(tx)}
+                              style={{ padding: '4px 10px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <FileText size={12} /> Hóa đơn
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

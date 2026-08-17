@@ -19,7 +19,9 @@ import {
   ShieldCheck,
   Zap,
   TrendingUp,
-  Receipt
+  Receipt,
+  Copy,
+  Check
 } from 'lucide-react';
 import { subscriptionApi, authApi } from '../services/api';
 
@@ -49,6 +51,7 @@ const getStatusBadge = (status) => {
         </span>
       );
     case 'EXPIRED':
+    case 'INACTIVE':
       return (
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: '5px',
@@ -56,7 +59,7 @@ const getStatusBadge = (status) => {
           fontSize: '12px', fontWeight: 700,
           background: '#F3F4F6', color: '#4B5563', border: '1px solid #E5E7EB'
         }}>
-          <XCircle size={13} /> Hết hạn
+          <Clock size={13} /> Đã hết hạn
         </span>
       );
     case 'CANCELLED':
@@ -99,7 +102,7 @@ const formatOrderCode = (tx) => {
   if (tx.orderCode) return `#ORD-${tx.orderCode}`;
   const dt = tx.startDate ? new Date(tx.startDate) : new Date();
   const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
-  return `#SM-${ymd}`;
+  return `#SM-${ymd}-${String(tx.id || '1').padStart(3, '0')}`;
 };
 
 // Receipt Modal Subcomponent
@@ -249,6 +252,14 @@ const StudentTransactions = () => {
   const [selectedTx, setSelectedTx] = useState(null);
   const [verifyingCode, setVerifyingCode] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
+  const [copiedCode, setCopiedCode] = useState(null);
+
+  const handleCopyCode = (code) => {
+    if (!code) return;
+    navigator.clipboard.writeText(String(code));
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
 
   // Compute date range based on preset (strictly clamped to <= 31 days)
   const getDateRange = useCallback(() => {
@@ -270,10 +281,6 @@ const StudentTransactions = () => {
   }, [timePreset, customFrom, customTo]);
 
   const loadData = useCallback(async () => {
-    if (isB2B) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError('');
     try {
@@ -298,7 +305,7 @@ const StudentTransactions = () => {
     } finally {
       setLoading(false);
     }
-  }, [isB2B, getDateRange, statusFilter]);
+  }, [getDateRange, statusFilter]);
 
   useEffect(() => {
     loadData();
@@ -343,33 +350,6 @@ const StudentTransactions = () => {
 
     return { totalSpent, paidCount, pendingCount, latestTx };
   }, [transactions]);
-
-  // If user is B2B Student
-  if (isB2B) {
-    return (
-      <div style={{ maxWidth: '800px', margin: '40px auto', padding: '0 20px' }}>
-        <div className="card" style={{ textAlign: 'center', padding: '48px 32px' }}>
-          <div style={{
-            width: '68px', height: '68px', borderRadius: '50%',
-            background: 'var(--primary-light)', color: 'var(--primary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 20px'
-          }}>
-            <Building2 size={34} />
-          </div>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-dark)', marginBottom: '12px' }}>
-            Tài khoản Học viên Đối tác (B2B)
-          </h2>
-          <p style={{ color: 'var(--gray-600)', fontSize: '15px', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 28px' }}>
-            Tài khoản của bạn trực thuộc <strong>Trung tâm Đào tạo</strong>. Toàn bộ gói cước, quyền lợi học tập và chi phí được trung tâm quản lý và chi trả tập trung.
-          </p>
-          <button type="button" className="btn btn-primary" onClick={() => navigate('/student')}>
-            Quay lại Lộ trình học tập
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   const activePlanName = currentPlanInfo?.planName || currentPlanInfo?.plan?.name || (currentUser?.plan || 'Free');
   const isPlanActive = Boolean(currentPlanInfo?.isActive);
@@ -417,15 +397,19 @@ const StudentTransactions = () => {
         marginBottom: '28px'
       }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
             <span style={{
               fontSize: '11px', fontWeight: 800, textTransform: 'uppercase',
               letterSpacing: '1px', color: 'var(--primary)', background: 'var(--primary-light)',
-              padding: '2px 10px', borderRadius: '20px'
+              padding: '3px 12px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '5px'
             }}>
-              Tài khoản Cá nhân (B2C)
+              {currentUser?.centerName ? (
+                <>
+                  <Building2 size={12} /> {currentUser.centerName}
+                </>
+              ) : (
+                'Tài khoản Học viên (B2C)'
+              )}
             </span>
-          </div>
           <h1 style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-dark)', margin: 0 }}>
             Quản lý Gói cước & Lịch sử Giao dịch
           </h1>
@@ -453,10 +437,10 @@ const StudentTransactions = () => {
         </div>
       </div>
 
-      {/* Top 3 KPI / Financial Overview Cards */}
+      {/* Top 2 Financial / Plan Overview Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: '20px',
         marginBottom: '28px'
       }}>
@@ -523,30 +507,6 @@ const StudentTransactions = () => {
           </div>
           <div style={{ fontSize: '13px', color: 'var(--gray-500)' }}>
             Ghi nhận từ <strong>{statsOverview.paidCount}</strong> giao dịch thành công
-          </div>
-        </div>
-
-        {/* Card 3: Pending Orders & Payment Gateway */}
-        <div className="card" style={{ padding: '22px 24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--gray-500)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              CỔNG THANH TOÁN & ĐƠN CHỜ
-            </span>
-            <div style={{
-              width: '38px', height: '38px', borderRadius: '10px',
-              background: statsOverview.pendingCount > 0 ? '#FEF3C7' : '#EFF6FF',
-              color: statsOverview.pendingCount > 0 ? '#D97706' : '#2563EB',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              {statsOverview.pendingCount > 0 ? <Clock size={20} /> : <ShieldCheck size={20} />}
-            </div>
-          </div>
-
-          <div style={{ fontSize: '26px', fontWeight: 900, color: statsOverview.pendingCount > 0 ? '#D97706' : 'var(--text-dark)', marginBottom: '4px' }}>
-            {statsOverview.pendingCount > 0 ? `${statsOverview.pendingCount} đơn chờ` : 'PayOS An toàn'}
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--gray-500)' }}>
-            {statsOverview.pendingCount > 0 ? 'Có giao dịch đang chờ xác nhận thanh toán' : 'Hỗ trợ VietQR & Chuyển khoản 24/7'}
           </div>
         </div>
       </div>
@@ -724,6 +684,8 @@ const StudentTransactions = () => {
                   {filteredList.map((tx) => {
                     const isPending = (tx.status || '').toUpperCase() === 'PENDING';
                     const orderCodeDisplay = formatOrderCode(tx);
+                    const codeToCopy = tx.orderCode ? String(tx.orderCode) : orderCodeDisplay;
+                    const isCopied = copiedCode === codeToCopy;
                     const price = Number(tx.priceVnd) || 0;
                     const rowKey = tx.orderCode ? `tx-${tx.orderCode}` : `tx-sub-${tx.id || tx.startDate}`;
 
@@ -737,11 +699,26 @@ const StudentTransactions = () => {
                       >
                         {/* Mã đơn hàng (Clean, NO DB ID) */}
                         <td style={{ padding: '14px 20px' }}>
-                          <div style={{ fontWeight: 800, color: 'var(--primary-dark)', fontSize: '14px' }}>
-                            {orderCodeDisplay}
-                          </div>
-                          <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>
-                            Cổng PayOS / VietQR
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontWeight: 800, color: 'var(--primary-dark)', fontSize: '14px' }}>
+                              {orderCodeDisplay}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyCode(codeToCopy)}
+                              title={`Sao chép mã: ${codeToCopy}`}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '2px',
+                                color: isCopied ? '#10B981' : 'var(--gray-400)',
+                                display: 'inline-flex',
+                                alignItems: 'center'
+                              }}
+                            >
+                              {isCopied ? <Check size={13} /> : <Copy size={13} />}
+                            </button>
                           </div>
                         </td>
 

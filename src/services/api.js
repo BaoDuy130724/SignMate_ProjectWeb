@@ -255,6 +255,7 @@ export const centersApi = {
   delete: (id) => del(`/centers/${id}`),
 
   getDashboard: (id) => get(`/centers/${id}/dashboard`),
+  getStats: (id) => get(`/centers/${id}/dashboard`),
 
   // Nhận định AI cho trung tâm (CenterAdmin chỉ đọc center mình — BE chặn IDOR).
   getInsight: (id, forceRefresh = false) => get(`/centers/${id}/insight${forceRefresh ? '?forceRefresh=true' : ''}`),
