@@ -17,13 +17,6 @@ const LoginPage = ({ setRole }) => {
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
 
-  // Quick fill helper for testing demo accounts
-  const handleQuickFill = (demoEmail, demoPw = 'SignMateDemo2026!') => {
-    setEmail(demoEmail);
-    setPassword(demoPw);
-    setError('');
-  };
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -203,28 +196,6 @@ const LoginPage = ({ setRole }) => {
               </div>
               <h2 className="auth-card-title">Đăng nhập tài khoản</h2>
               <p className="auth-card-subtitle">Chào mừng bạn quay trở lại với SignMate</p>
-            </div>
-
-            {/* Quick Demo Switcher for fast reviewer access */}
-            <div className="auth-demo-toolbar">
-              <div className="auth-demo-toolbar-title">
-                <span>Tài khoản Demo nhanh:</span>
-                <span style={{ fontSize: '10px', color: '#9d96aa' }}>Pass: SignMateDemo2026!</span>
-              </div>
-              <div className="auth-demo-chips">
-                <button type="button" className="auth-demo-chip" onClick={() => handleQuickFill('student@gmail.com')}>
-                  👤 Học viên
-                </button>
-                <button type="button" className="auth-demo-chip" onClick={() => handleQuickFill('teacher@vslhanoi.edu.vn')}>
-                  👩‍🏫 Giáo viên
-                </button>
-                <button type="button" className="auth-demo-chip" onClick={() => handleQuickFill('centeradmin@vslhanoi.edu.vn')}>
-                  🏫 TT VSL
-                </button>
-                <button type="button" className="auth-demo-chip" onClick={() => handleQuickFill('admin@signmate.vn')}>
-                  ⚡ Admin
-                </button>
-              </div>
             </div>
 
             {error && (

@@ -314,54 +314,6 @@
   color: #716982;
 }
 
-/* Demo accounts fast autofill toolbar */
-.auth-demo-toolbar {
-  background: #fdfaff;
-  border: 1px dashed rgba(155, 106, 255, 0.35);
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 20px;
-}
-
-.auth-demo-toolbar-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--primary-dark, #7c4ddb);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.auth-demo-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.auth-demo-chip {
-  background: white;
-  border: 1px solid rgba(155, 106, 255, 0.25);
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #524766;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.auth-demo-chip:hover {
-  background: var(--primary, #9b6aff);
-  color: white;
-  border-color: var(--primary, #9b6aff);
-}
-
 /* Form controls */
 .auth-input-group {
   margin-bottom: 18px;
