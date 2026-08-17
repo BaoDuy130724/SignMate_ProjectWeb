@@ -87,8 +87,10 @@ const ContentManagement = () => {
   const getFullVideoUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    const base = window.location.hostname === 'localhost' ? 'http://localhost:5184' : window.location.origin;
-    return `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+    const mediaHost = import.meta.env.VITE_MEDIA_URL ||
+      (import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') : '') ||
+      (window.location.hostname === 'localhost' ? 'http://localhost:5184' : window.location.origin);
+    return `${mediaHost}${url.startsWith('/') ? '' : '/'}${url}`;
   };
 
   const toggleCourse = async (courseId) => {

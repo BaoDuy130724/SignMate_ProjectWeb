@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, AlertCircle, ArrowLeft, Mail, Lock, User, KeyRound, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { 
+  UserPlus, AlertCircle, ArrowLeft, Mail, Lock, User, 
+  KeyRound, Loader2, CheckCircle2, Eye, EyeOff, Sparkles, 
+  Video, Flame, ShieldCheck, HeartHandshake 
+} from 'lucide-react';
 import { authApi } from '../services/api';
 import logoImg from '../assets/EXE201/logo.02-04.png';
+import './Auth.css';
 
 const RegisterPage = ({ setRole }) => {
   const navigate = useNavigate();
@@ -81,220 +86,298 @@ const RegisterPage = ({ setRole }) => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      background: 'var(--gray-50)',
-      padding: '24px'
-    }}>
-      <div style={{
-        background: 'white',
-        padding: '48px',
-        borderRadius: 'var(--radius-xl)',
-        border: '2px solid var(--gray-100)',
-        boxShadow: 'var(--shadow-lg)',
-        maxWidth: '480px',
-        width: '100%',
-        position: 'relative'
-      }}>
-        <div style={{ marginBottom: '24px', textAlign: 'left' }}>
-          <Link to="/" style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            color: 'var(--gray-400)', fontWeight: 700, fontSize: '14px',
-            textDecoration: 'none'
-          }}>
-            <ArrowLeft size={16} /> Về trang chủ
-          </Link>
-        </div>
+    <div className="auth-page">
+      <div className="auth-bg-blob-1" />
+      <div className="auth-bg-blob-2" />
 
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-            <img src={logoImg} alt="SignMate" style={{ maxHeight: '60px', objectFit: 'contain' }} />
+      <div className="auth-container">
+        {/* LEFT COLUMN: DYNAMIC VALUE PROPOSITION */}
+        <div className="auth-hero-side">
+          <div className="auth-brand-badge">
+            <span className="auth-brand-badge-dot" />
+            Khởi đầu hành trình học VSL
           </div>
-          <p style={{ color: 'var(--gray-400)', fontSize: '16px', margin: 0 }}>
-            {step === 1 ? 'Tạo tài khoản mới' : 'Xác thực email của bạn'}
+
+          <h1 className="auth-hero-title">
+            Gia nhập cộng đồng <span>SignMate</span> ngay hôm nay
+          </h1>
+
+          <p className="auth-hero-desc">
+            Trải nghiệm phương pháp học Ngôn ngữ Ký hiệu hiện đại, tương tác 1-1 cùng trợ lý AI và kết nối với cộng đồng người khiếm thính Việt Nam.
           </p>
+
+          {/* Feature highlights for register */}
+          <div className="auth-ai-showcase" style={{ background: 'linear-gradient(145deg, #1e1533 0%, #130d24 100%)' }}>
+            <div className="auth-ai-showcase-header">
+              <div className="auth-ai-showcase-status">
+                <Sparkles size={16} color="#f8d80f" />
+                <span>Quyền lợi tài khoản mới</span>
+              </div>
+              <div className="auth-ai-showcase-score" style={{ background: 'rgba(155, 106, 255, 0.2)', borderColor: 'rgba(155, 106, 255, 0.4)', color: '#c084fc' }}>
+                Gói Miễn Phí 0đ
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', margin: '8px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#e2d9f3', fontSize: '14px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', flexShrink: 0 }}>
+                  <CheckCircle2 size={16} />
+                </div>
+                <span>Truy cập bài học giao tiếp & bảng chữ cái chuẩn VSL</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#e2d9f3', fontSize: '14px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(155, 106, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c084fc', flexShrink: 0 }}>
+                  <Video size={16} />
+                </div>
+                <span>Gương tập AI nhận diện tư thế qua Camera máy tính/điện thoại</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#e2d9f3', fontSize: '14px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(248, 216, 15, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f8d80f', flexShrink: 0 }}>
+                  <Flame size={16} />
+                </div>
+                <span>Duy trì chuỗi ngày học Streak và nhận huy hiệu danh giá</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="auth-highlights">
+            <div className="auth-highlight-item">
+              <div className="auth-highlight-icon">
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <div className="auth-highlight-title">Bảo mật thông tin</div>
+                <div className="auth-highlight-desc">Mã hóa dữ liệu và xác thực an toàn qua mã OTP.</div>
+              </div>
+            </div>
+
+            <div className="auth-highlight-item">
+              <div className="auth-highlight-icon">
+                <HeartHandshake size={20} />
+              </div>
+              <div>
+                <div className="auth-highlight-title">Học tập đa nền tảng</div>
+                <div className="auth-highlight-desc">Đồng bộ tiến độ học liền mạch trên Web và Mobile.</div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Step indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '28px', justifyContent: 'center' }}>
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '50%',
-            background: 'var(--primary)', color: 'white',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '14px', fontWeight: 800
-          }}>
-            {step > 1 ? <CheckCircle2 size={18} /> : '1'}
-          </div>
-          <div style={{ width: '60px', height: '3px', background: step >= 2 ? 'var(--primary)' : 'var(--gray-200)', borderRadius: '2px', transition: 'background 0.3s' }} />
-          <div style={{
-            width: '32px', height: '32px', borderRadius: '50%',
-            background: step >= 2 ? 'var(--primary)' : 'var(--gray-200)',
-            color: step >= 2 ? 'white' : 'var(--gray-400)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '14px', fontWeight: 800, transition: 'all 0.3s'
-          }}>
-            2
-          </div>
-        </div>
+        {/* RIGHT COLUMN: REGISTER FORM CARD */}
+        <div className="auth-form-side">
+          <div className="auth-form-card">
+            <Link to="/" className="auth-back-link">
+              <ArrowLeft size={16} /> Về trang chủ
+            </Link>
 
-        {error && (
-          <div style={{
-            background: '#ffebee', border: '2px solid var(--red)', borderRadius: 'var(--radius-md)',
-            padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px',
-            fontSize: '14px', color: 'var(--red-dark)', fontWeight: 600, textAlign: 'left'
-          }}>
-            <AlertCircle size={18} /> {error}
-          </div>
-        )}
-
-        {step === 1 && (
-          <form onSubmit={handleSendOtp}>
-            <div className="form-group" style={{ textAlign: 'left' }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <User size={14} /> Họ và tên
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Nguyễn Văn A"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
+            <div className="auth-card-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <img src={logoImg} alt="SignMate" style={{ height: '36px', objectFit: 'contain' }} />
+              </div>
+              <h2 className="auth-card-title">
+                {step === 1 ? 'Đăng ký tài khoản' : 'Xác thực mã OTP'}
+              </h2>
+              <p className="auth-card-subtitle">
+                {step === 1 ? 'Điền thông tin để bắt đầu học tập cùng SignMate' : `Mã 6 chữ số đã được gửi tới ${email}`}
+              </p>
             </div>
 
-            <div className="form-group" style={{ textAlign: 'left' }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Mail size={14} /> Email
-              </label>
-              <input
-                type="email"
-                className="form-input"
-                placeholder="email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-group" style={{ textAlign: 'left' }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Lock size={14} /> Mật khẩu
-              </label>
-              <div style={{ position: 'relative' }}>
-              <input
-                type={showPw ? 'text' : 'password'}
-                className="form-input"
-                placeholder="Tối thiểu 6 ký tự"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                style={{ paddingRight: '44px' }}
-              />
-              <button type="button" onClick={() => setShowPw(!showPw)} style={{
-                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)',
-              }}>
-                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+            {/* Step Progress Bar */}
+            <div className="auth-step-bar">
+              <div className={`auth-step-circle ${step >= 1 ? 'active' : 'inactive'}`}>
+                {step > 1 ? <CheckCircle2 size={16} /> : '1'}
+              </div>
+              <div className={`auth-step-line ${step >= 2 ? 'active' : ''}`} />
+              <div className={`auth-step-circle ${step >= 2 ? 'active' : 'inactive'}`}>
+                2
               </div>
             </div>
 
-            <div className="form-group" style={{ textAlign: 'left' }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Lock size={14} /> Xác nhận mật khẩu
-              </label>
-              <div style={{ position: 'relative' }}>
-              <input
-                type={showConfirmPw ? 'text' : 'password'}
-                className="form-input"
-                placeholder="Nhập lại mật khẩu"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                style={{ paddingRight: '44px' }}
-              />
-              <button type="button" onClick={() => setShowConfirmPw(!showConfirmPw)} style={{
-                position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gray-400)',
-              }}>
-                {showConfirmPw ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+            {error && (
+              <div className="auth-error-banner">
+                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                <span>{error}</span>
               </div>
+            )}
+
+            {step === 1 && (
+              <form onSubmit={handleSendOtp}>
+                <div className="auth-input-group">
+                  <label className="auth-label">Họ và tên của bạn</label>
+                  <div className="auth-input-container">
+                    <div className="auth-input-icon">
+                      <User size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      className="auth-input"
+                      placeholder="Ví dụ: Nguyễn Văn An"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="auth-input-group">
+                  <label className="auth-label">Địa chỉ Email</label>
+                  <div className="auth-input-container">
+                    <div className="auth-input-icon">
+                      <Mail size={18} />
+                    </div>
+                    <input
+                      type="email"
+                      className="auth-input"
+                      placeholder="email@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="auth-input-group">
+                  <label className="auth-label">Mật khẩu</label>
+                  <div className="auth-input-container">
+                    <div className="auth-input-icon">
+                      <Lock size={18} />
+                    </div>
+                    <input
+                      type={showPw ? 'text' : 'password'}
+                      className="auth-input"
+                      placeholder="Tối thiểu 6 ký tự..."
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      className="auth-pw-toggle"
+                      onClick={() => setShowPw(!showPw)}
+                      tabIndex="-1"
+                    >
+                      {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="auth-input-group">
+                  <label className="auth-label">Xác nhận mật khẩu</label>
+                  <div className="auth-input-container">
+                    <div className="auth-input-icon">
+                      <Lock size={18} />
+                    </div>
+                    <input
+                      type={showConfirmPw ? 'text' : 'password'}
+                      className="auth-input"
+                      placeholder="Nhập lại mật khẩu..."
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="auth-pw-toggle"
+                      onClick={() => setShowConfirmPw(!showConfirmPw)}
+                      tabIndex="-1"
+                    >
+                      {showConfirmPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button type="submit" className="auth-submit-btn" disabled={loading}>
+                  {loading ? (
+                    <><Loader2 size={18} className="spinning" /> Đang gửi mã OTP...</>
+                  ) : (
+                    <><Mail size={18} /> Nhận mã xác thực qua Email</>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {step === 2 && (
+              <form onSubmit={handleRegister}>
+                <div style={{
+                  background: '#f0fdf4',
+                  border: '1.5px solid #bbf7d0',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  marginBottom: '20px',
+                  fontSize: '13px',
+                  color: '#166534',
+                  textAlign: 'center'
+                }}>
+                  <CheckCircle2 size={20} style={{ margin: '0 auto 6px', color: '#16a34a' }} />
+                  <div>Mã OTP đã được gửi thành công!</div>
+                  <div style={{ fontSize: '12px', color: '#15803d', marginTop: '2px' }}>
+                    Vui lòng kiểm tra hộp thư đến (hoặc thư rác/spam).
+                  </div>
+                </div>
+
+                <div className="auth-input-group">
+                  <label className="auth-label">Nhập mã OTP (6 chữ số)</label>
+                  <div className="auth-input-container">
+                    <div className="auth-input-icon">
+                      <KeyRound size={18} />
+                    </div>
+                    <input
+                      type="text"
+                      className="auth-input"
+                      placeholder="• • • • • •"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      required
+                      maxLength={6}
+                      style={{ textAlign: 'center', fontSize: '20px', fontWeight: 900, letterSpacing: '6px' }}
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="auth-submit-btn" 
+                  disabled={loading || otpCode.length !== 6}
+                >
+                  {loading ? (
+                    <><Loader2 size={18} className="spinning" /> Đang kích hoạt tài khoản...</>
+                  ) : (
+                    <><UserPlus size={18} /> Hoàn tất đăng ký & Đăng nhập</>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setStep(1); setError(''); setOtpCode(''); }}
+                  style={{
+                    width: '100%',
+                    marginTop: '12px',
+                    padding: '11px',
+                    background: 'transparent',
+                    border: '1.5px solid #e5deef',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#6b6480',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ← Chỉnh sửa lại thông tin
+                </button>
+              </form>
+            )}
+
+            <div className="auth-card-footer">
+              Đã có tài khoản?{' '}
+              <Link to="/login">
+                Đăng nhập ngay
+              </Link>
             </div>
-
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }} disabled={loading}>
-              {loading ? (
-                <><Loader2 size={18} className="spinning" style={{ marginRight: '8px' }} /> Đang gửi mã OTP...</>
-              ) : (
-                <><Mail size={18} style={{ marginRight: '8px' }} /> Gửi mã xác thực</>
-              )}
-            </button>
-          </form>
-        )}
-
-        {step === 2 && (
-          <form onSubmit={handleRegister}>
-            <div style={{
-              background: 'var(--green-soft, #e8f5e9)', border: '2px solid var(--green, #4caf50)',
-              borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '20px',
-              fontSize: '14px', color: 'var(--green-dark, #2e7d32)', fontWeight: 600, textAlign: 'center'
-            }}>
-              <CheckCircle2 size={20} style={{ marginBottom: '4px' }} />
-              <div>Mã OTP đã được gửi tới <strong>{email}</strong></div>
-              <div style={{ fontSize: '12px', fontWeight: 500, opacity: 0.8, marginTop: '4px' }}>
-                Vui lòng kiểm tra hộp thư (kể cả thư rác)
-              </div>
-            </div>
-
-            <div className="form-group" style={{ textAlign: 'left' }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <KeyRound size={14} /> Mã OTP (6 số)
-              </label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Nhập mã 6 số"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                required
-                maxLength={6}
-                style={{ textAlign: 'center', fontSize: '24px', fontWeight: 900, letterSpacing: '8px' }}
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }} disabled={loading || otpCode.length !== 6}>
-              {loading ? (
-                <><Loader2 size={18} className="spinning" style={{ marginRight: '8px' }} /> Đang tạo tài khoản...</>
-              ) : (
-                <><UserPlus size={18} style={{ marginRight: '8px' }} /> Hoàn tất đăng ký</>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setStep(1); setError(''); setOtpCode(''); }}
-              style={{
-                width: '100%', marginTop: '12px', padding: '10px',
-                background: 'transparent', border: '2px solid var(--gray-200)',
-                borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                fontSize: '14px', fontWeight: 700, color: 'var(--gray-400)'
-              }}
-            >
-              ← Quay lại chỉnh sửa thông tin
-            </button>
-          </form>
-        )}
-
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px', color: 'var(--gray-400)' }}>
-          Đã có tài khoản?{' '}
-          <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>
-            Đăng nhập
-          </Link>
+          </div>
         </div>
       </div>
     </div>

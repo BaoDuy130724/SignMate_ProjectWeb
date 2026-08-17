@@ -6,7 +6,7 @@
 // classes, courses, lessons, enrollments, games, practice, progress, tracking,
 // notifications, onboarding, subscription, teacher, vocabulary, b2b contact, seed).
 
-export const API_BASE = '/api';
+export const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 // Helper: get JWT token from localStorage
 const getToken = () => localStorage.getItem('accessToken');
