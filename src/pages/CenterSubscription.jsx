@@ -9,170 +9,16 @@ import {
   Loader2,
   AlertCircle,
   Clock,
-  XCircle,
-  Sparkles,
   Search,
   RefreshCw,
   FileText,
-  X,
-  Printer,
-  Receipt,
   Copy,
   Check
 } from 'lucide-react';
 import { centersApi, subscriptionApi } from '../services/api';
-
-const getStatusBadge = (status) => {
-  const st = (status || '').toUpperCase();
-  switch (st) {
-    case 'PAID':
-      return (
-        <span className="badge badge-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
-          <CheckCircle2 size={12} /> Đã thanh toán
-        </span>
-      );
-    case 'PENDING':
-      return (
-        <span className="badge badge-yellow" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
-          <Clock size={12} /> Chờ thanh toán
-        </span>
-      );
-    case 'EXPIRED':
-      return (
-        <span className="badge badge-gray" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
-          <XCircle size={12} /> Hết hạn
-        </span>
-      );
-    case 'CANCELLED':
-      return (
-        <span className="badge badge-red" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
-          <XCircle size={12} /> Đã hủy
-        </span>
-      );
-    case 'FREE':
-      return (
-        <span className="badge badge-blue" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}>
-          <Sparkles size={12} /> Miễn phí
-        </span>
-      );
-    default:
-      return <span className="badge badge-gray">{status}</span>;
-  }
-};
-
-const formatOrderCode = (tx) => {
-  if (tx.orderCode) return `#ORD-${tx.orderCode}`;
-  const dt = tx.startDate ? new Date(tx.startDate) : new Date();
-  const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
-  return `#SM-${ymd}-${String(tx.id || '1').padStart(3, '0')}`;
-};
-
-// Receipt Modal Component
-const CenterReceiptModal = ({ tx, onClose }) => {
-  if (!tx) return null;
-  const price = Number(tx.priceVnd) || 0;
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.65)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '20px',
-        maxWidth: '520px',
-        width: '100%',
-        overflow: 'hidden',
-        boxShadow: 'var(--shadow-xl)'
-      }}>
-        <div style={{
-          background: 'linear-gradient(135deg, var(--text-dark) 0%, #1e1b4b 100%)',
-          color: 'white',
-          padding: '20px 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Receipt size={22} color="var(--yellow)" />
-            <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: 'white' }}>HÓA ĐƠN GIAO DỊCH</h3>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--gray-100)' }}>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>MÃ GIAO DỊCH</div>
-              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--primary-dark)', marginTop: '2px' }}>
-                {formatOrderCode(tx)}
-              </div>
-            </div>
-            <div>{getStatusBadge(tx.status)}</div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px', fontSize: '13px' }}>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>NGƯỜI DÙNG / TRUNG TÂM</div>
-              <div style={{ fontWeight: 700, marginTop: '2px' }}>{tx.userFullName || '—'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>{tx.email}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>GÓI DỊCH VỤ</div>
-              <div style={{ fontWeight: 700, marginTop: '2px' }}>{tx.planName} ({tx.planType})</div>
-              <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>
-                {tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ background: 'var(--gray-50)', borderRadius: '12px', padding: '14px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 700, fontSize: '14px' }}>Tổng số tiền:</span>
-              <span style={{ fontWeight: 900, fontSize: '18px', color: 'var(--primary-dark)' }}>
-                {price > 0 ? `${price.toLocaleString('vi-VN')}đ` : '0đ'}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => window.print()}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
-            >
-              <Printer size={14} /> In hóa đơn
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={onClose}
-              style={{ fontSize: '13px' }}
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { formatOrderCode, formatVnd, formatDate } from '../utils/transactionUtils';
+import { StatusBadge, ReceiptModal } from '../components/subscription';
+import usePaymentVerify from '../hooks/usePaymentVerify';
 
 const CenterSubscription = () => {
   const [subscription, setSubscription] = useState(null);
@@ -189,7 +35,6 @@ const CenterSubscription = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTx, setSelectedTx] = useState(null);
-  const [verifyingCode, setVerifyingCode] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
 
@@ -200,26 +45,6 @@ const CenterSubscription = () => {
     navigator.clipboard.writeText(String(code));
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
-  };
-
-  const handleVerify = async (orderCode) => {
-    if (!orderCode) return;
-    setVerifyingCode(orderCode);
-    setActionMessage(null);
-    try {
-      const res = await subscriptionApi.verifyPayment(orderCode);
-      if (res && res.status === 'PAID') {
-        setActionMessage({ type: 'success', text: `Đơn hàng #${orderCode} đã xác nhận thanh toán thành công!` });
-      } else {
-        setActionMessage({ type: 'info', text: `Trạng thái PayOS: ${res?.status || 'Chưa hoàn tất'}` });
-      }
-      await Promise.all([loadData(), loadTransactions()]);
-    } catch (err) {
-      setActionMessage({ type: 'error', text: err.message || 'Kiểm tra thất bại' });
-    } finally {
-      setVerifyingCode(null);
-      setTimeout(() => setActionMessage(null), 5000);
-    }
   };
 
   const loadData = useCallback(async () => {
@@ -242,26 +67,6 @@ const CenterSubscription = () => {
       setLoading(false);
     }
   }, [centerId]);
-
-  // Mua thêm/gia hạn = thanh toán gói B2B qua PayOS
-  const handleBuySeats = async () => {
-    if (!b2bPlan) return;
-    try {
-      setSubscribing(true);
-      const returnUrl = `${window.location.origin}/payment-callback`;
-      const res = await subscriptionApi.upgrade(b2bPlan.id, returnUrl);
-      if (res.paymentUrl) {
-        localStorage.setItem('pendingPlanId', String(b2bPlan.id));
-        window.location.href = res.paymentUrl;
-      } else if (res.success) {
-        await loadData();
-      }
-    } catch (err) {
-      setError(err.message || 'Không thể khởi tạo thanh toán');
-    } finally {
-      setSubscribing(false);
-    }
-  };
 
   const loadTransactions = useCallback(async () => {
     setTxLoading(true);
@@ -291,6 +96,40 @@ const CenterSubscription = () => {
     loadTransactions();
   }, [loadData, loadTransactions]);
 
+  // Payment Verification with Cooldown
+  const { verifyPayment, verifyingCode, getCooldownSeconds } = usePaymentVerify(async () => {
+    await Promise.all([loadData(), loadTransactions()]);
+  });
+
+  const handleVerify = async (orderCode) => {
+    const res = await verifyPayment(orderCode);
+    setActionMessage({
+      type: res.success ? 'success' : 'error',
+      text: res.message
+    });
+    setTimeout(() => setActionMessage(null), 5000);
+  };
+
+  // Mua thêm/gia hạn = thanh toán gói B2B qua PayOS
+  const handleBuySeats = async () => {
+    if (!b2bPlan) return;
+    try {
+      setSubscribing(true);
+      const returnUrl = `${window.location.origin}/payment-callback`;
+      const res = await subscriptionApi.upgrade(b2bPlan.id, returnUrl);
+      if (res.paymentUrl) {
+        localStorage.setItem('pendingPlanId', String(b2bPlan.id));
+        window.location.href = res.paymentUrl;
+      } else if (res.success) {
+        await loadData();
+      }
+    } catch (err) {
+      setError(err.message || 'Không thể khởi tạo thanh toán');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   const filteredTxList = useMemo(() => {
     if (!searchTerm.trim()) return transactions;
     const query = searchTerm.toLowerCase();
@@ -314,7 +153,6 @@ const CenterSubscription = () => {
 
   const seatPrice = b2bPlan?.priceVnd || 79000;
 
-  // Extract status indicators without nested ternaries
   const getSubscriptionStatusColor = () => {
     if (!subscription) return '#999';
     return subscription.isActive ? 'var(--green, #10b981)' : 'var(--red, #dc2626)';
@@ -358,7 +196,7 @@ const CenterSubscription = () => {
               <div style={{ textAlign: 'right' }}>
                 <span style={{ fontSize: '13px', color: 'var(--gray-400)', fontWeight: 600 }}>Chi phí gói</span>
                 <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary)' }}>
-                  {(subscription?.priceVnd || seatPrice).toLocaleString('vi-VN')}đ / học viên
+                  {formatVnd(subscription?.priceVnd || seatPrice)} / học viên
                 </div>
               </div>
             </div>
@@ -367,24 +205,24 @@ const CenterSubscription = () => {
               <div>
                 <div style={{ color: 'var(--gray-400)', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>Tình trạng</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ 
-                    width: '12px', 
-                    height: '12px', 
-                    borderRadius: '50%', 
-                    background: getSubscriptionStatusColor() 
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    borderRadius: '50%',
+                    background: getSubscriptionStatusColor()
                   }}></div>
                   <span style={{ fontWeight: 800, fontSize: '18px' }}>
                     {getSubscriptionStatusLabel()}
                   </span>
                 </div>
               </div>
-              
+
               <div>
                 <div style={{ color: 'var(--gray-400)', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '8px' }}>Ngày hết hạn</div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Calendar size={20} color="var(--gray-400)" />
                   <span style={{ fontWeight: 800, fontSize: '18px' }}>
-                    {subscription?.endDate ? new Date(subscription.endDate).toLocaleDateString('vi-VN') : '—'}
+                    {subscription?.endDate ? formatDate(subscription.endDate) : '—'}
                   </span>
                 </div>
               </div>
@@ -392,15 +230,15 @@ const CenterSubscription = () => {
 
             <div style={{ marginTop: '40px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
-                    <Users size={18} color="var(--primary)" /> Giới hạn Học viên (Seats)
-                 </div>
-                 <div style={{ fontWeight: 800 }}>{stats?.totalStudents ?? stats?.studentCount ?? 0} / {stats?.maxSeats || 50} seats</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                  <Users size={18} color="var(--primary)" /> Giới hạn Học viên (Seats)
+                </div>
+                <div style={{ fontWeight: 800 }}>{stats?.totalStudents ?? stats?.studentCount ?? 0} / {stats?.maxSeats || 50} seats</div>
               </div>
               <div style={{ height: '16px', background: 'var(--gray-100)', borderRadius: '20px', overflow: 'hidden' }}>
-                <div style={{ 
-                  width: `${Math.min(100, (((stats?.totalStudents ?? stats?.studentCount ?? 0)) / (stats?.maxSeats || 50)) * 100)}%`, 
-                  height: '100%', 
+                <div style={{
+                  width: `${Math.min(100, (((stats?.totalStudents ?? stats?.studentCount ?? 0)) / (stats?.maxSeats || 50)) * 100)}%`,
+                  height: '100%',
                   background: 'linear-gradient(90deg, var(--primary), var(--purple))',
                   borderRadius: '20px'
                 }}></div>
@@ -427,44 +265,44 @@ const CenterSubscription = () => {
         </div>
 
         <div>
-           <div className="card" style={{ background: 'var(--text-dark)', color: '#fff', border: 'none', position: 'relative', overflow: 'hidden', padding: '32px' }}>
-              <Star size={80} style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1, transform: 'rotate(15deg)' }} />
-              <div className="badge badge-yellow" style={{ position: 'relative', marginBottom: '16px' }}>GÓI B2B</div>
-              <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{b2bPlan?.name || 'Gói Trung tâm (B2B)'}</h2>
-              <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '24px' }}>Tính phí theo từng học viên, linh hoạt mở rộng quy mô lớp học của trung tâm.</p>
+          <div className="card" style={{ background: 'var(--text-dark)', color: '#fff', border: 'none', position: 'relative', overflow: 'hidden', padding: '32px' }}>
+            <Star size={80} style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1, transform: 'rotate(15deg)' }} />
+            <div className="badge badge-yellow" style={{ position: 'relative', marginBottom: '16px' }}>GÓI B2B</div>
+            <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{b2bPlan?.name || 'Gói Trung tâm (B2B)'}</h2>
+            <p style={{ opacity: 0.7, fontSize: '14px', marginBottom: '24px' }}>Tính phí theo từng học viên, linh hoạt mở rộng quy mô lớp học của trung tâm.</p>
 
-              <div style={{ fontSize: '32px', fontWeight: 800, marginBottom: '32px' }}>
-                {seatPrice.toLocaleString('vi-VN')}đ <span style={{ fontSize: '15px', fontWeight: 600, opacity: 0.6 }}>/ học viên / tháng</span>
-              </div>
+            <div style={{ fontSize: '32px', fontWeight: 800, marginBottom: '32px' }}>
+              {formatVnd(seatPrice)} <span style={{ fontSize: '15px', fontWeight: 600, opacity: 0.6 }}>/ học viên / tháng</span>
+            </div>
 
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                 {features.slice(0, 3).map((f) => (
-                   <li key={f} style={{ display: 'flex', gap: '10px' }}><CheckCircle2 size={16} color="var(--yellow)" /> {f}</li>
-                 ))}
-              </ul>
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', fontSize: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {features.slice(0, 3).map((f) => (
+                <li key={f} style={{ display: 'flex', gap: '10px' }}><CheckCircle2 size={16} color="var(--yellow)" /> {f}</li>
+              ))}
+            </ul>
 
-              <button
-                type="button"
-                className="btn btn-primary"
-                style={{ width: '100%', background: 'var(--yellow)', color: 'var(--text-dark)', fontWeight: 800, border: 'none' }}
-                onClick={handleBuySeats}
-                disabled={subscribing || !b2bPlan}
-              >
-                {subscribing
-                  ? <><Loader2 size={18} className="spinning" /> Đang chuyển tới thanh toán...</>
-                  : <>Mua thêm seats <ArrowUpRight size={18} /></>}
-              </button>
-           </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ width: '100%', background: 'var(--yellow)', color: 'var(--text-dark)', fontWeight: 800, border: 'none' }}
+              onClick={handleBuySeats}
+              disabled={subscribing || !b2bPlan}
+            >
+              {subscribing
+                ? <><Loader2 size={18} className="spinning" /> Đang chuyển tới thanh toán...</>
+                : <>Mua thêm seats <ArrowUpRight size={18} /></>}
+            </button>
+          </div>
 
-           <div style={{ marginTop: '24px', padding: '24px', borderRadius: '16px', border: '2px dashed var(--gray-200)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: 'var(--primary-light)', padding: '12px', borderRadius: '12px', color: 'var(--primary)' }}>
-                 <ShieldCheck size={28} />
-              </div>
-              <div>
-                 <div style={{ fontWeight: 800, fontSize: '15px' }}>Bảo mật & Hợp đồng Doanh nghiệp</div>
-                 <div style={{ fontSize: '13px', color: 'var(--gray-400)', marginTop: '4px' }}>Cần hóa đơn VAT đỏ hoặc thanh toán chuyển khoản doanh nghiệp? Liên hệ đội ngũ SignMate B2B.</div>
-              </div>
-           </div>
+          <div style={{ marginTop: '24px', padding: '24px', borderRadius: '16px', border: '2px dashed var(--gray-200)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'var(--primary-light)', padding: '12px', borderRadius: '12px', color: 'var(--primary)' }}>
+              <ShieldCheck size={28} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '15px' }}>Bảo mật & Hợp đồng Doanh nghiệp</div>
+              <div style={{ fontSize: '13px', color: 'var(--gray-400)', marginTop: '4px' }}>Cần hóa đơn VAT đỏ hoặc thanh toán chuyển khoản doanh nghiệp? Liên hệ đội ngũ SignMate B2B.</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -599,6 +437,8 @@ const CenterSubscription = () => {
                     const orderCodeDisplay = formatOrderCode(tx);
                     const codeToCopy = tx.orderCode ? String(tx.orderCode) : orderCodeDisplay;
                     const isCopied = copiedCode === codeToCopy;
+                    const cooldown = tx.orderCode ? getCooldownSeconds(tx.orderCode) : 0;
+                    const isVerifyingCurrent = verifyingCode === tx.orderCode;
 
                     return (
                       <tr key={txKey} style={{ borderBottom: '1px solid var(--gray-100)' }}>
@@ -633,18 +473,18 @@ const CenterSubscription = () => {
                           </span>
                         </td>
                         <td style={{ padding: '12px 16px', fontWeight: 800, fontSize: '13px', color: tx.priceVnd > 0 ? 'var(--primary-dark)' : 'var(--gray-500)' }}>
-                          {tx.priceVnd > 0 ? `${Number(tx.priceVnd).toLocaleString('vi-VN')}đ` : '0đ'}
+                          {formatVnd(tx.priceVnd)}
                         </td>
                         <td style={{ padding: '12px 16px', fontSize: '12px' }}>
-                          <div>{tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}</div>
+                          <div>{formatDate(tx.startDate)}</div>
                           {tx.endDate && (
                             <div style={{ fontSize: '10px', color: 'var(--gray-400)' }}>
-                              Hạn: {new Date(tx.endDate).toLocaleDateString('vi-VN')}
+                              Hạn: {formatDate(tx.endDate)}
                             </div>
                           )}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
-                          {getStatusBadge(tx.status)}
+                          <StatusBadge status={tx.status} />
                         </td>
                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
@@ -652,17 +492,17 @@ const CenterSubscription = () => {
                               <button
                                 type="button"
                                 className="btn btn-primary"
-                                disabled={verifyingCode === tx.orderCode}
+                                disabled={isVerifyingCurrent || cooldown > 0}
                                 onClick={() => handleVerify(tx.orderCode)}
                                 style={{ padding: '4px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                title="Kiểm tra trạng thái từ PayOS"
+                                title={cooldown > 0 ? `Vui lòng chờ ${cooldown}s` : "Kiểm tra trạng thái từ PayOS"}
                               >
-                                {verifyingCode === tx.orderCode ? (
+                                {isVerifyingCurrent ? (
                                   <Loader2 size={11} className="spinning" />
                                 ) : (
                                   <RefreshCw size={11} />
                                 )}
-                                Kiểm tra
+                                {cooldown > 0 ? `${cooldown}s` : 'Kiểm tra'}
                               </button>
                             )}
                             <button
@@ -687,7 +527,11 @@ const CenterSubscription = () => {
 
       {/* Transaction Detail Modal */}
       {selectedTx && (
-        <CenterReceiptModal tx={selectedTx} onClose={() => setSelectedTx(null)} />
+        <ReceiptModal
+          tx={selectedTx}
+          portalType="center"
+          onClose={() => setSelectedTx(null)}
+        />
       )}
     </div>
   );

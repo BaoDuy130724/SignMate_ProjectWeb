@@ -194,8 +194,8 @@ const RevenueManagement = () => {
     <>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="page-title">Financial Dashboard (CEO Room)</h1>
-          <p className="page-subtitle">Theo dõi dòng tiền, doanh thu B2B/B2C và hiệu quả kinh doanh</p>
+          <h1 className="page-title">Báo cáo & Phân tích Tài chính</h1>
+          <p className="page-subtitle">Theo dõi xu hướng dòng tiền, cơ cấu doanh thu B2B/B2C và nhận định tài chính từ AI</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <select className="form-input" style={{ width: '160px', margin: 0 }} value={timeRange} onChange={e => setTimeRange(e.target.value)}>

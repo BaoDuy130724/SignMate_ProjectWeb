@@ -28,7 +28,7 @@ const Sidebar = ({ role }) => {
               links: [
                 { to: '/admin/users', icon: <Users size={20} />, label: 'User Management' },
                 { to: '/admin/b2b', icon: <Building2 size={20} />, label: 'B2B Management' },
-                { to: '/admin/subscriptions', icon: <CreditCard size={20} />, label: 'Subscriptions' },
+                { to: '/admin/subscriptions', icon: <Receipt size={20} />, label: 'Giao dịch & Đối soát' },
                 { to: '/admin/plans', icon: <Settings size={20} />, label: 'Plans Config' },
                 { to: '/admin/content', icon: <BookOpen size={20} />, label: 'Content' },
               ]
@@ -37,7 +37,7 @@ const Sidebar = ({ role }) => {
               label: 'Phân tích & Tài chính',
               links: [
                 { to: '/admin/analytics', icon: <BarChart3 size={20} />, label: 'Analytics' },
-                { to: '/admin/revenue', icon: <CreditCard size={20} />, label: 'Doanh thu' },
+                { to: '/admin/revenue', icon: <TrendingUp size={20} />, label: 'Báo cáo Tài chính' },
               ]
             },
           ]

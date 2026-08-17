@@ -1,22 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Calendar,
   Search,
   CheckCircle2,
-  Clock,
-  XCircle,
   AlertCircle,
   Loader2,
   FileText,
   RefreshCw,
-  Sparkles,
-  Printer,
   X,
   Info,
   Building2,
   Crown,
-  ShieldCheck,
   Zap,
   TrendingUp,
   Receipt,
@@ -24,221 +19,11 @@ import {
   Check
 } from 'lucide-react';
 import { subscriptionApi, authApi } from '../services/api';
-
-const getStatusBadge = (status) => {
-  const st = (status || '').toUpperCase();
-  switch (st) {
-    case 'PAID':
-      return (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '5px',
-          padding: '4px 10px', borderRadius: '20px',
-          fontSize: '12px', fontWeight: 700,
-          background: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0'
-        }}>
-          <CheckCircle2 size={13} /> Thành công
-        </span>
-      );
-    case 'PENDING':
-      return (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '5px',
-          padding: '4px 10px', borderRadius: '20px',
-          fontSize: '12px', fontWeight: 700,
-          background: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A'
-        }}>
-          <Clock size={13} /> Chờ thanh toán
-        </span>
-      );
-    case 'EXPIRED':
-    case 'INACTIVE':
-      return (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '5px',
-          padding: '4px 10px', borderRadius: '20px',
-          fontSize: '12px', fontWeight: 700,
-          background: '#F3F4F6', color: '#4B5563', border: '1px solid #E5E7EB'
-        }}>
-          <Clock size={13} /> Đã hết hạn
-        </span>
-      );
-    case 'CANCELLED':
-      return (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '5px',
-          padding: '4px 10px', borderRadius: '20px',
-          fontSize: '12px', fontWeight: 700,
-          background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA'
-        }}>
-          <XCircle size={13} /> Đã hủy
-        </span>
-      );
-    case 'FREE':
-      return (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '5px',
-          padding: '4px 10px', borderRadius: '20px',
-          fontSize: '12px', fontWeight: 700,
-          background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE'
-        }}>
-          <Sparkles size={13} /> Miễn phí
-        </span>
-      );
-    default:
-      return (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: '5px',
-          padding: '4px 10px', borderRadius: '20px',
-          fontSize: '12px', fontWeight: 700,
-          background: 'var(--gray-100)', color: 'var(--gray-600)'
-        }}>
-          {status}
-        </span>
-      );
-  }
-};
-
-const formatOrderCode = (tx) => {
-  if (tx.orderCode) return `#ORD-${tx.orderCode}`;
-  const dt = tx.startDate ? new Date(tx.startDate) : new Date();
-  const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
-  return `#SM-${ymd}-${String(tx.id || '1').padStart(3, '0')}`;
-};
-
-// Receipt Modal Subcomponent
-const StudentReceiptModal = ({ tx, currentUser, onClose }) => {
-  if (!tx) return null;
-  const price = Number(tx.priceVnd) || 0;
-
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.65)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '20px'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '20px',
-        maxWidth: '560px',
-        width: '100%',
-        overflow: 'hidden',
-        boxShadow: 'var(--shadow-xl)',
-        animation: 'fadeIn 0.2s ease-out'
-      }}>
-        {/* Modal Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-          color: 'white',
-          padding: '22px 28px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Receipt size={24} />
-            <div>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'white' }}>BIÊN LAI ĐIỆN TỬ</h3>
-              <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '2px' }}>SignMate Education Platform</div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div style={{ padding: '28px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--gray-100)' }}>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700, textTransform: 'uppercase' }}>MÃ ĐƠN HÀNG</div>
-              <div style={{ fontSize: '16px', fontWeight: 900, color: 'var(--primary-dark)', marginTop: '2px' }}>
-                {formatOrderCode(tx)}
-              </div>
-            </div>
-            <div>{getStatusBadge(tx.status)}</div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>KHÁCH HÀNG</div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', marginTop: '2px' }}>
-                {currentUser?.fullName || 'Học viên'}
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--gray-500)' }}>{currentUser?.email}</div>
-            </div>
-
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--gray-400)', fontWeight: 700 }}>PHƯƠNG THỨC</div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', marginTop: '2px' }}>
-                PayOS (VietQR / Chuyển khoản)
-              </div>
-            </div>
-          </div>
-
-          {/* Items Breakdown */}
-          <div style={{ background: 'var(--gray-50)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
-              <span style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{tx.planName} ({tx.planType})</span>
-              <span style={{ fontWeight: 800, color: 'var(--text-dark)' }}>{price.toLocaleString('vi-VN')} đ</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--gray-500)', marginBottom: '4px' }}>
-              <span>Ngày kích hoạt:</span>
-              <span>{tx.startDate ? new Date(tx.startDate).toLocaleDateString('vi-VN') : '—'}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--gray-500)' }}>
-              <span>Thời hạn đến:</span>
-              <span>{tx.endDate ? new Date(tx.endDate).toLocaleDateString('vi-VN') : '—'}</span>
-            </div>
-
-            <div style={{ borderTop: '1px dashed var(--gray-200)', marginTop: '12px', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-dark)' }}>TỔNG THANH TOÁN:</span>
-              <span style={{ fontWeight: 900, fontSize: '18px', color: 'var(--primary-dark)' }}>
-                {price.toLocaleString('vi-VN')} đ
-              </span>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => window.print()}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Printer size={15} /> In biên lai
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={onClose}
-            >
-              Đóng
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import { formatOrderCode, formatVnd, formatDate } from '../utils/transactionUtils';
+import { StatusBadge, ReceiptModal } from '../components/subscription';
+import usePaymentVerify from '../hooks/usePaymentVerify';
 
 const StudentTransactions = () => {
-  const navigate = useNavigate();
-  const rawCenterId = localStorage.getItem('centerId');
-  const isB2B = Boolean(rawCenterId && rawCenterId !== 'null' && rawCenterId !== 'undefined' && rawCenterId !== '' && rawCenterId !== '0');
-
   const [transactions, setTransactions] = useState([]);
   const [currentPlanInfo, setCurrentPlanInfo] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -250,7 +35,6 @@ const StudentTransactions = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTx, setSelectedTx] = useState(null);
-  const [verifyingCode, setVerifyingCode] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
   const [copiedCode, setCopiedCode] = useState(null);
 
@@ -261,7 +45,7 @@ const StudentTransactions = () => {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  // Compute date range based on preset (strictly clamped to <= 31 days)
+  // Compute date range based on preset (clamped <= 31 days)
   const getDateRange = useCallback(() => {
     const now = new Date();
     if (timePreset === 'custom') {
@@ -311,19 +95,17 @@ const StudentTransactions = () => {
     loadData();
   }, [loadData]);
 
-  // Handle Verify Payment for Pending Transactions
+  // Payment verification with anti-spam cooldown
+  const { verifyPayment, verifyingCode, getCooldownSeconds } = usePaymentVerify(async () => {
+    await loadData();
+  });
+
   const handleVerify = async (orderCode) => {
-    if (!orderCode) return;
-    try {
-      setVerifyingCode(orderCode);
-      const res = await subscriptionApi.verifyPayment(orderCode);
-      setToastMsg({ type: 'success', text: res.message || 'Đã kiểm tra và kích hoạt gói thành công!' });
-      await loadData();
-    } catch (err) {
-      setToastMsg({ type: 'error', text: err.message || 'Chưa ghi nhận thanh toán từ cổng giao dịch PayOS.' });
-    } finally {
-      setVerifyingCode(null);
-    }
+    const res = await verifyPayment(orderCode);
+    setToastMsg({
+      type: res.success ? 'success' : 'error',
+      text: res.message
+    });
   };
 
   // Filter transactions by search term
@@ -397,20 +179,20 @@ const StudentTransactions = () => {
         marginBottom: '28px'
       }}>
         <div>
-            <span style={{
-              fontSize: '11px', fontWeight: 800, textTransform: 'uppercase',
-              letterSpacing: '1px', color: 'var(--primary)', background: 'var(--primary-light)',
-              padding: '3px 12px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '5px'
-            }}>
-              {currentUser?.centerName ? (
-                <>
-                  <Building2 size={12} /> {currentUser.centerName}
-                </>
-              ) : (
-                'Tài khoản Học viên (B2C)'
-              )}
-            </span>
-          <h1 style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-dark)', margin: 0 }}>
+          <span style={{
+            fontSize: '11px', fontWeight: 800, textTransform: 'uppercase',
+            letterSpacing: '1px', color: 'var(--primary)', background: 'var(--primary-light)',
+            padding: '3px 12px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '5px'
+          }}>
+            {currentUser?.centerName ? (
+              <>
+                <Building2 size={12} /> {currentUser.centerName}
+              </>
+            ) : (
+              'Tài khoản Học viên (B2C)'
+            )}
+          </span>
+          <h1 style={{ fontSize: '28px', fontWeight: 900, color: 'var(--text-dark)', margin: 0, marginTop: '4px' }}>
             Quản lý Gói cước & Lịch sử Giao dịch
           </h1>
           <p style={{ color: 'var(--gray-500)', fontSize: '14px', marginTop: '6px', margin: 0 }}>
@@ -480,7 +262,7 @@ const StudentTransactions = () => {
 
             <p style={{ fontSize: '13px', opacity: 0.85, margin: 0 }}>
               {currentPlanInfo?.endDate
-                ? `Hạn dùng đến: ${new Date(currentPlanInfo.endDate).toLocaleDateString('vi-VN')}`
+                ? `Hạn dùng đến: ${formatDate(currentPlanInfo.endDate)}`
                 : 'Trải nghiệm lộ trình học tập SignMate'}
             </p>
           </div>
@@ -503,7 +285,7 @@ const StudentTransactions = () => {
           </div>
 
           <div style={{ fontSize: '26px', fontWeight: 900, color: '#047857', marginBottom: '4px' }}>
-            {statsOverview.totalSpent.toLocaleString('vi-VN')} đ
+            {formatVnd(statsOverview.totalSpent)}
           </div>
           <div style={{ fontSize: '13px', color: 'var(--gray-500)' }}>
             Ghi nhận từ <strong>{statsOverview.paidCount}</strong> giao dịch thành công
@@ -522,7 +304,7 @@ const StudentTransactions = () => {
             {[
               { id: '7', label: '7 ngày' },
               { id: '14', label: '14 ngày' },
-              { id: '30', label: '30 ngày (1 tháng)' },
+              { id: '30', label: '30 ngày' },
               { id: 'custom', label: 'Tùy chỉnh' }
             ].map(p => {
               const isSelected = timePreset === p.id;
@@ -581,7 +363,7 @@ const StudentTransactions = () => {
           </div>
         </div>
 
-        {/* Custom date range picker if selected */}
+        {/* Custom date range picker */}
         {timePreset === 'custom' && (
           <div style={{
             marginTop: '14px',
@@ -688,6 +470,8 @@ const StudentTransactions = () => {
                     const isCopied = copiedCode === codeToCopy;
                     const price = Number(tx.priceVnd) || 0;
                     const rowKey = tx.orderCode ? `tx-${tx.orderCode}` : `tx-sub-${tx.id || tx.startDate}`;
+                    const cooldown = tx.orderCode ? getCooldownSeconds(tx.orderCode) : 0;
+                    const isVerifyingCurrent = verifyingCode === tx.orderCode;
 
                     return (
                       <tr
@@ -697,7 +481,7 @@ const StudentTransactions = () => {
                           transition: 'background 0.15s ease'
                         }}
                       >
-                        {/* Mã đơn hàng (Clean, NO DB ID) */}
+                        {/* Mã đơn hàng */}
                         <td style={{ padding: '14px 20px' }}>
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                             <span style={{ fontWeight: 800, color: 'var(--primary-dark)', fontSize: '14px' }}>
@@ -734,26 +518,24 @@ const StudentTransactions = () => {
 
                         {/* Số tiền */}
                         <td style={{ padding: '14px 20px', fontWeight: 800, fontSize: '15px', color: price > 0 ? 'var(--text-dark)' : 'var(--gray-500)' }}>
-                          {price > 0 ? `${price.toLocaleString('vi-VN')} đ` : '0 đ (Miễn phí)'}
+                          {price > 0 ? formatVnd(price) : '0 đ (Miễn phí)'}
                         </td>
 
                         {/* Thời gian */}
                         <td style={{ padding: '14px 20px', fontSize: '13px', color: 'var(--gray-600)' }}>
                           <div>
-                            {tx.startDate
-                              ? new Date(tx.startDate).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' })
-                              : '—'}
+                            {formatDate(tx.startDate, true)}
                           </div>
                           {tx.endDate && (
                             <div style={{ fontSize: '11px', color: 'var(--gray-400)', marginTop: '2px' }}>
-                              Đến: {new Date(tx.endDate).toLocaleDateString('vi-VN')}
+                              Đến: {formatDate(tx.endDate)}
                             </div>
                           )}
                         </td>
 
                         {/* Trạng thái */}
                         <td style={{ padding: '14px 20px' }}>
-                          {getStatusBadge(tx.status)}
+                          <StatusBadge status={tx.status} />
                         </td>
 
                         {/* Thao tác */}
@@ -763,18 +545,18 @@ const StudentTransactions = () => {
                               <button
                                 type="button"
                                 className="btn btn-primary"
-                                disabled={verifyingCode === tx.orderCode}
+                                disabled={isVerifyingCurrent || cooldown > 0}
                                 onClick={() => handleVerify(tx.orderCode)}
                                 style={{ padding: '6px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                title="Kiểm tra thanh toán từ PayOS"
+                                title={cooldown > 0 ? `Vui lòng chờ ${cooldown}s` : "Kiểm tra thanh toán từ PayOS"}
                               >
-                                {verifyingCode === tx.orderCode ? (
+                                {isVerifyingCurrent ? (
                                   <>
                                     <Loader2 size={12} className="spinning" /> Kiểm tra...
                                   </>
                                 ) : (
                                   <>
-                                    <RefreshCw size={12} /> Kiểm tra TT
+                                    <RefreshCw size={12} /> {cooldown > 0 ? `${cooldown}s` : 'Kiểm tra TT'}
                                   </>
                                 )}
                               </button>
@@ -800,9 +582,14 @@ const StudentTransactions = () => {
         })()}
       </div>
 
-      {/* Electronic Receipt / Invoice Modal */}
+      {/* Electronic Receipt Modal */}
       {selectedTx && (
-        <StudentReceiptModal tx={selectedTx} currentUser={currentUser} onClose={() => setSelectedTx(null)} />
+        <ReceiptModal
+          tx={selectedTx}
+          currentUser={currentUser}
+          portalType="student"
+          onClose={() => setSelectedTx(null)}
+        />
       )}
     </div>
   );
